@@ -6,6 +6,18 @@ const dev = process.env.NODE_ENV !== "production";
 const app = next({ dev });
 const handle = app.getRequestHandler();
 
+const { MongoClient } = require("mongodb");
+
+const uri =
+  "mongodb+srv://admin:hello234@cluster0.qhj8gpn.mongodb.net/?retryWrites=true&w=majority";
+const client = new MongoClient(uri);
+console.log("Connected to MongoDB");
+
+const database = client.db("Heroes");
+const infodb = database.collection("info");
+const powersdb = database.collection("powers");
+const userdb = database.collection("user");
+
 app
   .prepare()
   .then(() => {
