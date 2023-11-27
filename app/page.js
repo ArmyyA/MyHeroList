@@ -2,6 +2,7 @@ import Image from "next/image";
 import Nav from "./nav";
 import { Button } from "@/components/ui/button";
 import HeroCard from "@/components/heroCard";
+import { Card } from "@/components/ui/card";
 
 export default function Home() {
   return (
@@ -23,15 +24,47 @@ export default function Home() {
           </div>
         </div>
       </div>
-      <div className="mt-36">
+      <div className="mt-36 mb-10">
         <h1 className="text-center text-4xl font-semibold text-gray-800 mb-5">
           Featured Heroes
         </h1>
+
         <div className="flex justify-center gap-10 py-6">
-          <HeroCard />
-          <HeroCard />
-          <HeroCard />
-          <HeroCard />
+          <HeroCard
+            image={
+              "https://www.superherodb.com/pictures2/portraits/10/100/1496.jpg"
+            }
+            name={"Batman"}
+            publisher={"DC Comics"}
+          />
+          <HeroCard
+            image={
+              "https://www.superherodb.com/pictures2/portraits/10/100/956.jpg"
+            }
+            name={"Abe Sapien"}
+            publisher={"Dark Horse Comics"}
+          />
+          <HeroCard
+            image={
+              "https://www.superherodb.com/pictures2/portraits/10/100/10647.jpg"
+            }
+            name={"Spider-Man"}
+            publisher={"Marvel Comics"}
+          />
+          <HeroCard
+            image={
+              "https://www.superherodb.com/pictures2/portraits/10/100/10060.jpg"
+            }
+            name={"A-Bomb"}
+            publisher={"Marvel Comics"}
+          />
+          <HeroCard
+            image={
+              "https://www.superherodb.com/pictures2/portraits/10/100/10090.jpg"
+            }
+            name={"Evil Deadpool"}
+            publisher={"Marvel Comics"}
+          />
         </div>
       </div>
     </main>

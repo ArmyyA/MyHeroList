@@ -4,22 +4,20 @@ import { Card, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 
-export default function HeroCard() {
+export default function HeroCard({ name, image, publisher }) {
   return (
     <div>
-      <Card>
+      <Card className="shadow-md">
         <img
-          src={
-            "https://static01.nyt.com/images/2023/06/01/multimedia/spiderman2-tljp/spiderman2-tljp-videoSixteenByNineJumbo1600.jpg"
-          }
-          width={250}
+          src={image}
+          width={195}
           height={50}
           className="rounded-md w-m shadow-md"
         />
         <CardHeader>
-          <div className="flex gap-4 mb-4">
-            <CardTitle>Spider-Man</CardTitle>
-            <Badge>Marvel</Badge>
+          <div className="flex-col space-y-4 mb-4">
+            <CardTitle className="">{name}</CardTitle>
+            <Badge>{publisher}</Badge>
           </div>
           <Button variant="outline">Learn More</Button>
         </CardHeader>
