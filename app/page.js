@@ -1,13 +1,14 @@
 import Image from "next/image";
 import Nav from "./nav";
 import { Button } from "@/components/ui/button";
+import HeroCard from "@/components/heroCard";
 
 export default function Home() {
   return (
     <main className="">
       <Nav />
-      <div className="flex justify-center">
-        <div className="mt-60 flex-col space-y-7 text-center">
+      <div className="flex justify-center mb-6">
+        <div className="mt-44 flex-col space-y-7 text-center">
           <h1 className="text-6xl font-semibold text-gray-800">
             Craft Your Heroic Legacy
           </h1>
@@ -20,6 +21,17 @@ export default function Home() {
             <Button>Get Searching</Button>
             <Button variant="outline">Create Account</Button>
           </div>
+        </div>
+      </div>
+      <div className="mt-36">
+        <h1 className="text-center text-4xl font-semibold text-gray-800 mb-5">
+          Featured Heroes
+        </h1>
+        <div className="flex justify-center gap-10 py-6">
+          <HeroCard />
+          <HeroCard />
+          <HeroCard />
+          <HeroCard />
         </div>
       </div>
     </main>
