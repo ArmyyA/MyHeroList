@@ -4,12 +4,33 @@ import { Button } from "@/components/ui/button";
 import HeroCard from "@/components/heroCard";
 import { Card } from "@/components/ui/card";
 
-export default function Home() {
+async function getHeroes() {
+  const heroIds = [68, 265, 622, 309];
+  const fetchPromise = heroIds.map(async (id) => {
+    const heroRes = await fetch(`${process.env.NEXT_URL}api/heroes/${id}`);
+    const hero = await heroRes.json();
+    const imgRes = await fetch(
+      `${process.env.SUPERHERO_API}search/${hero.name}`
+    );
+    const imgData = await imgRes.json();
+
+    const heroImg = imgData.results[0].image;
+    return { ...hero, image: heroImg.url };
+  });
+  const heroes = await Promise.all(fetchPromise);
+
+  console.log(heroes);
+
+  return heroes;
+}
+
+export default async function Home() {
+  const heroes = await getHeroes();
   return (
     <main className="">
       <Nav />
       <div className="flex justify-center mb-6">
-        <div className="mt-44 flex-col space-y-7 text-center">
+        <div className="mt-40 flex-col space-y-7 text-center">
           <h1 className="text-6xl font-semibold text-gray-800">
             Craft Your Heroic Legacy
           </h1>
@@ -25,46 +46,28 @@ export default function Home() {
         </div>
       </div>
       <div className="mt-36 mb-10">
-        <h1 className="text-center text-4xl font-semibold text-gray-800 mb-5">
-          Featured Heroes
-        </h1>
+        <div className="flex-col space-y-2 mb-8">
+          <h1 className="text-center text-4xl font-semibold text-gray-800">
+            Featured Heroes
+          </h1>
+        </div>
 
-        <div className="flex justify-center gap-10 py-6">
-          <HeroCard
-            image={
-              "https://www.superherodb.com/pictures2/portraits/10/100/1496.jpg"
-            }
-            name={"Batman"}
-            publisher={"DC Comics"}
-          />
-          <HeroCard
-            image={
-              "https://www.superherodb.com/pictures2/portraits/10/100/956.jpg"
-            }
-            name={"Abe Sapien"}
-            publisher={"Dark Horse Comics"}
-          />
-          <HeroCard
-            image={
-              "https://www.superherodb.com/pictures2/portraits/10/100/10647.jpg"
-            }
-            name={"Spider-Man"}
-            publisher={"Marvel Comics"}
-          />
-          <HeroCard
-            image={
-              "https://www.superherodb.com/pictures2/portraits/10/100/10060.jpg"
-            }
-            name={"A-Bomb"}
-            publisher={"Marvel Comics"}
-          />
-          <HeroCard
-            image={
-              "https://www.superherodb.com/pictures2/portraits/10/100/10090.jpg"
-            }
-            name={"Evil Deadpool"}
-            publisher={"Marvel Comics"}
-          />
+        <div className="flex justify-center gap-11 py-6">
+          {heroes.map((hero) => (
+            <HeroCard
+              image={hero.image}
+              gender={hero.Gender}
+              name={hero.name}
+              publisher={hero.Publisher}
+              eye={hero["Eye color"]}
+              race={hero.Race}
+              hair={hero["Hair color"]}
+              height={hero.Height}
+              skin={hero["Skin color"]}
+              align={hero.Alignment}
+              weight={hero.Weight}
+            />
+          ))}
         </div>
       </div>
     </main>
