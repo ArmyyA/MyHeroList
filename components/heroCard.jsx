@@ -28,7 +28,7 @@ export default function HeroCard({
 }) {
   return (
     <div>
-      <Card className="">
+      <Card className="shadow-inner">
         <img src={image} width={210} height={50} className="rounded-md" />
         <CardHeader>
           <div className="flex-col space-y-4 mb-4">
@@ -47,7 +47,7 @@ export default function HeroCard({
                     width={245}
                     height={50}
                     alt=""
-                    className="rounded-md w-m shadow-md outline outline-2 outline-offset-2"
+                    className="rounded-md w-m shadow-md"
                   />
                   <div className="flex-col space-y-2  text-left">
                     <DialogTitle className="text-3xl">{name}</DialogTitle>

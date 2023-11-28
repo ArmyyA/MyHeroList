@@ -3,6 +3,7 @@ import Nav from "./nav";
 import { Button } from "@/components/ui/button";
 import HeroCard from "@/components/heroCard";
 import { Card } from "@/components/ui/card";
+import Link from "next/link";
 
 async function getHeroes() {
   const heroIds = [68, 265, 622, 309];
@@ -28,7 +29,6 @@ export default async function Home() {
   const heroes = await getHeroes();
   return (
     <main className="">
-      <Nav />
       <div className="flex justify-center mb-6">
         <div className="mt-40 flex-col space-y-7 text-center">
           <h1 className="text-6xl font-semibold text-gray-800">
@@ -41,12 +41,14 @@ export default async function Home() {
           </p>
           <div className="flex gap-7 mt-2 py-7 justify-center">
             <Button>Get Searching</Button>
-            <Button variant="outline">Create Account</Button>
+            <Link href="/auth">
+              <Button variant="outline">Create Account</Button>
+            </Link>
           </div>
         </div>
       </div>
       <div className="mt-36 mb-10">
-        <div className="flex-col space-y-2 mb-8">
+        <div className="flex-col space-y-2 mb-4">
           <h1 className="text-center text-4xl font-semibold text-gray-800">
             Featured Heroes
           </h1>

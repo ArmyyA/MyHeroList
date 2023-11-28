@@ -2,6 +2,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const next = require("next");
 const Joi = require("joi");
+const bcrypt = require("bcrypt");
 
 const dev = process.env.NODE_ENV !== "production";
 const server = next({ dev });
@@ -271,6 +272,35 @@ server
         return res.json(publishers);
       } catch (err) {
         res.status(500).json({ message: err.message });
+      }
+    });
+
+    app.post("/api/auth/register", async (req, res) => {
+      try {
+        const { email, password, username } = req.body;
+        console.log("Reached");
+        const exists = await userdb.findOne({ email });
+        if (exists) {
+          return res
+            .status(400)
+            .json({ msg: "Uh-oh, an account with this email already exists!" });
+        }
+        const salt = await bcrypt.genSalt(10);
+        const hashedPass = await bcrypt.hash(password, salt);
+
+        const newUser = {
+          email: email,
+          password: hashedPass,
+          username: username,
+        };
+        await userdb.insertOne(newUser);
+
+        res
+          .status(201)
+          .json({ msg: "User successfully registered! Enjoy exploring." });
+      } catch (err) {
+        console.log(err.message);
+        res.status(500).send("Error");
       }
     });
 

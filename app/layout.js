@@ -1,6 +1,8 @@
 import { Inter } from "next/font/google";
 import { Spectral } from "next/font/google";
 import "./globals.css";
+import Nav from "./nav";
+import { Toaster } from "@/components/ui/toaster";
 
 const inter = Inter({ subsets: ["latin"] });
 const spectral = Spectral({
@@ -17,7 +19,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={spectral.className}>
-        <div className="mx-6 md:max-w-7xl md:mx-auto">{children}</div>
+        <div className="mx-6 md:max-w-7xl md:mx-auto">
+          <Nav />
+          {children}
+        </div>
+        <Toaster />
       </body>
     </html>
   );
