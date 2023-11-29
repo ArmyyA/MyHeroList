@@ -19,6 +19,7 @@ import { useRouter } from "next/navigation";
 
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase";
+import { signIn } from "next-auth/react";
 
 export default function Auth() {
   const [email, setEmail] = useState("");
@@ -38,7 +39,12 @@ export default function Auth() {
         title: "Success!",
         description: "User successfully registered! Enjoy exploring.",
       });
-      router.push("/");
+      signIn("credentials", {
+        email,
+        password,
+        redirect: true,
+        callbackUrl: "/",
+      });
     } catch (err) {
       console.log(err);
       if (err.code === "auth/email-already-in-use") {

@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import HeroCard from "@/components/heroCard";
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/pages/api/auth/[...nextauth]";
 
 async function getHeroes() {
   const heroIds = [68, 265, 622, 309];
@@ -20,12 +22,11 @@ async function getHeroes() {
   });
   const heroes = await Promise.all(fetchPromise);
 
-  console.log(heroes);
-
   return heroes;
 }
 
 export default async function Home() {
+  const session = await getServerSession(authOptions);
   const heroes = await getHeroes();
   return (
     <main className="">

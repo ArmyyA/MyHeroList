@@ -207,7 +207,6 @@ server
       const id = parseInt(req.params.id);
 
       const hero = await infodb.findOne({ id: id });
-      console.log(hero);
 
       if (!hero) {
         return res.status(404).json({ message: "Hero not found!" });
@@ -502,6 +501,10 @@ server
     });
 
     app.get("*", (req, res) => {
+      return handle(req, res);
+    });
+
+    app.post("*", (req, res) => {
       return handle(req, res);
     });
 
