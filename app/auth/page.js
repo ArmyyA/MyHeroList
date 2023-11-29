@@ -15,31 +15,39 @@ import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 
+import { useRouter } from "next/navigation";
+
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../firebase";
+
 export default function Auth() {
   const [email, setEmail] = useState("");
   const [username, setUser] = useState("");
   const [password, setPassword] = useState("");
+
+  const router = useRouter();
 
   const { toast } = useToast();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const res = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, username, password }),
-    });
-    if (res.status === 201) {
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
       toast({
         title: "Success!",
         description: "User successfully registered! Enjoy exploring.",
       });
-    } else {
-      toast({
-        title: "Error!",
-        description: "User successfully registered! Enjoy exploring.",
-      });
+      router.push("/");
+    } catch (err) {
+      console.log(err);
+      if (err.code === "auth/email-already-in-use") {
+        let message = "Email is already in use!";
+        toast({
+          title: "Uh-oh!",
+          description: message,
+        });
+      }
     }
   };
 
@@ -53,8 +61,8 @@ export default function Auth() {
               Enter your email below to create your account
             </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-4">
-            <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit}>
+            <CardContent className="grid gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -70,7 +78,7 @@ export default function Auth() {
                 <Input
                   id="username"
                   type="username"
-                  placeholder="username"
+                  placeholder=""
                   value={username}
                   onChange={(e) => setUser(e.target.value)}
                 />
@@ -87,8 +95,8 @@ export default function Auth() {
               <Button type="submit" className="w-full mt-2">
                 Create account
               </Button>
-            </form>
-          </CardContent>
+            </CardContent>
+          </form>
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">

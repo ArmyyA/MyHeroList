@@ -3,6 +3,7 @@ import { Spectral } from "next/font/google";
 import "./globals.css";
 import Nav from "./nav";
 import { Toaster } from "@/components/ui/toaster";
+import SessionProvider from "./SessionProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 const spectral = Spectral({
@@ -21,7 +22,7 @@ export default function RootLayout({ children }) {
       <body className={spectral.className}>
         <div className="mx-6 md:max-w-7xl md:mx-auto">
           <Nav />
-          {children}
+          <SessionProvider>{children}</SessionProvider>
         </div>
         <Toaster />
       </body>

@@ -4,6 +4,8 @@ const next = require("next");
 const Joi = require("joi");
 const bcrypt = require("bcrypt");
 
+const auth = require("next-auth");
+
 const dev = process.env.NODE_ENV !== "production";
 const server = next({ dev });
 const handle = server.getRequestHandler();
