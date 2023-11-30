@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import SignedIn from "@/components/SignedIn";
+import LogIn from "@/components/LogIn";
 
 export default async function Nav() {
   const session = await getServerSession(authOptions);
@@ -17,13 +18,7 @@ export default async function Nav() {
         </h3>
       </Link>
       <ul className="flex items-center gap-6">
-        {!session?.user && (
-          <Button variant="ghost">
-            <Link href={"/auth"} className="text-lg">
-              Join Now
-            </Link>
-          </Button>
-        )}
+        {!session?.user && <LogIn variant={"ghost"} />}
         {session?.user && (
           <div>
             <SignedIn />

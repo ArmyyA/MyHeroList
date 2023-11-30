@@ -18,7 +18,7 @@ export default function SignedIn() {
             });
           }}
           href=""
-          className="text-lg"
+          className=""
         >
           Sign Out
         </Link>

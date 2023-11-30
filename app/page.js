@@ -69,6 +69,7 @@ export default async function Home() {
               skin={hero["Skin color"]}
               align={hero.Alignment}
               weight={hero.Weight}
+              powers={hero.powers.join(", ")}
             />
           ))}
         </div>

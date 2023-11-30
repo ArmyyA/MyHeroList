@@ -25,6 +25,7 @@ export default function HeroCard({
   skin,
   align,
   weight,
+  powers,
 }) {
   return (
     <div>
@@ -41,10 +42,10 @@ export default function HeroCard({
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <div className="flex gap-6">
+                <div className="flex gap-6 w-full">
                   <img
                     src={image}
-                    width={245}
+                    width={335}
                     height={50}
                     alt=""
                     className="rounded-md w-m shadow-md"
@@ -63,6 +64,7 @@ export default function HeroCard({
                     <p>Skin: {skin}</p>
                     <p>Alignment: {align}</p>
                     <p>Weight: {weight}</p>
+                    <p>Powers: {powers}</p>
                   </div>
                 </div>
               </DialogHeader>

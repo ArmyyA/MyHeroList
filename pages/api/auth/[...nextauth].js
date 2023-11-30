@@ -6,7 +6,7 @@ import { auth } from "@/app/firebase";
 export const authOptions = {
   // Configure one or more authentication providers
   pages: {
-    signIn: "/signin",
+    signIn: "/auth",
   },
   providers: [
     CredentialsProvider({
@@ -19,16 +19,20 @@ export const authOptions = {
           credentials.password || ""
         )
           .then((userCredential) => {
-            if (userCredential.user) {
+            if (userCredential.user && userCredential.user.emailVerified) {
               return userCredential.user;
+            } else if (
+              userCredential.user &&
+              !userCredential.user.emailVerified
+            ) {
+              throw new Error("Email not verified");
+            } else if (!userCredential.user) {
+              throw new Error("Invalid credentials");
             }
-            return null;
           })
-          .catch((error) => console.log(error))
           .catch((error) => {
-            const errorCode = error.code;
-            const errorMessage = error.message;
-            console.log(error);
+            console.log(error.message);
+            throw new Error(error);
           });
       },
     }),

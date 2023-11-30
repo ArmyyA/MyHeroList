@@ -14,19 +14,29 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
+import LogIn from "@/components/LogIn";
 
 import { useRouter } from "next/navigation";
 
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase";
-import { signIn } from "next-auth/react";
+import { sendEmailVerification } from "firebase/auth";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function Auth() {
   const [email, setEmail] = useState("");
   const [username, setUser] = useState("");
   const [password, setPassword] = useState("");
-
-  const router = useRouter();
 
   const { toast } = useToast();
 
@@ -34,16 +44,24 @@ export default function Auth() {
     e.preventDefault();
 
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      toast({
-        title: "Success!",
-        description: "User successfully registered! Enjoy exploring.",
-      });
-      signIn("credentials", {
+      const userCred = await createUserWithEmailAndPassword(
+        auth,
         email,
-        password,
-        redirect: true,
-        callbackUrl: "/",
+        password
+      );
+      await sendEmailVerification(userCred.user);
+      userCred.user.displayName = username;
+      console.log(userCred.user.displayName);
+      const res = await fetch("/api/user/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, username }),
+      });
+      console.log(res);
+      toast({
+        title: "Just one more step!",
+        description:
+          "Before you can sign in, you will need to verify your email. Please check your inbox for verification instructions.",
       });
     } catch (err) {
       console.log(err);
@@ -115,10 +133,8 @@ export default function Auth() {
             </div>
           </div>
 
-          <CardFooter>
-            <Button className="w-full mt-5" variant="outline">
-              Login
-            </Button>
+          <CardFooter className="mt-5">
+            <LogIn variant={"outline"} />
           </CardFooter>
         </Card>
       </div>

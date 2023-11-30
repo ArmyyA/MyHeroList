@@ -211,6 +211,26 @@ server
       if (!hero) {
         return res.status(404).json({ message: "Hero not found!" });
       }
+
+      const heroName = hero.name;
+
+      const powers = await powersdb.findOne({ hero_names: heroName });
+
+      if (powers) {
+        const powersResult = Object.entries(powers)
+          .filter(
+            ([power, value]) =>
+              value === "True" && power !== "hero_names" && power !== "_id"
+          )
+          .map(([power]) => power);
+
+        const heroWithPowers = {
+          ...hero,
+          powers: powersResult,
+        };
+        return res.json(heroWithPowers);
+      }
+
       return res.json(hero);
     });
 
@@ -276,9 +296,9 @@ server
       }
     });
 
-    app.post("/api/auth/register", async (req, res) => {
+    app.post("/api/user/register", async (req, res) => {
       try {
-        const { email, password, username } = req.body;
+        const { email, username } = req.body;
         console.log("Reached");
         const exists = await userdb.findOne({ email });
         if (exists) {
@@ -286,12 +306,9 @@ server
             .status(400)
             .json({ msg: "Uh-oh, an account with this email already exists!" });
         }
-        const salt = await bcrypt.genSalt(10);
-        const hashedPass = await bcrypt.hash(password, salt);
 
         const newUser = {
           email: email,
-          password: hashedPass,
           username: username,
         };
         await userdb.insertOne(newUser);
@@ -504,7 +521,7 @@ server
       return handle(req, res);
     });
 
-    app.post("*", (req, res) => {
+    app.post("/api/auth/*", (req, res) => {
       return handle(req, res);
     });
 
