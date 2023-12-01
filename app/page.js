@@ -27,6 +27,7 @@ async function getHeroes() {
 
 export default async function Home() {
   const session = await getServerSession(authOptions);
+  console.log(session?.user);
   const heroes = await getHeroes();
   return (
     <main className="">

@@ -21,17 +21,7 @@ import { useRouter } from "next/navigation";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase";
 import { sendEmailVerification } from "firebase/auth";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { updateProfile } from "firebase/auth";
 
 export default function Auth() {
   const [email, setEmail] = useState("");
@@ -50,7 +40,7 @@ export default function Auth() {
         password
       );
       await sendEmailVerification(userCred.user);
-      userCred.user.displayName = username;
+      await updateProfile(userCred.user, { displayName: username });
       console.log(userCred.user.displayName);
       const res = await fetch("/api/user/register", {
         method: "POST",

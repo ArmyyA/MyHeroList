@@ -27,6 +27,11 @@ export default function HeroCard({
   weight,
   powers,
 }) {
+  function searchDDG() {
+    var searchQuery = encodeURIComponent(name);
+    var url = `https://duckduckgo.com/?q=${searchQuery}`;
+    window.open(url, "_blank");
+  }
   return (
     <div>
       <Card className="shadow-inner">
@@ -70,6 +75,9 @@ export default function HeroCard({
               </DialogHeader>
             </DialogContent>
           </Dialog>
+          <Button onClick={searchDDG} className="" variant="outline">
+            Search DDG
+          </Button>
         </CardHeader>
       </Card>
     </div>

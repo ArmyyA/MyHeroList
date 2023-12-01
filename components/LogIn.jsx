@@ -19,6 +19,8 @@ import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { sendPasswordResetEmail } from "firebase/auth";
+import ForgotPass from "./ForgotPass";
 
 export default function LogIn({ variant }) {
   const { toast } = useToast();
@@ -33,14 +35,21 @@ export default function LogIn({ variant }) {
       redirect: false,
     });
 
-    console.log(res);
-
+    console.log(res.error);
     if (!res.ok) {
-      let message = res.error;
-      toast({
-        title: "Uh-oh!",
-        description: message,
-      });
+      if (res.error == "auth/user-disabled") {
+        toast({
+          title: "Uh-oh!",
+          description:
+            "It seems like your account is disabled. Please contact the administrator",
+        });
+      } else if (res.error == "auth/invalid-credential") {
+        let message = res.error;
+        toast({
+          title: "Uh-oh!",
+          description: "Your credentials are invalid. Please try again!",
+        });
+      }
     } else {
       await toast({
         title: "Successfully logged in!",
@@ -94,11 +103,12 @@ export default function LogIn({ variant }) {
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button className="mt-3" type="submit">
+          <div className="flex items-center mt-6 justify-between">
+            <ForgotPass />
+            <Button className="" type="submit">
               Login
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

@@ -20,7 +20,11 @@ export const authOptions = {
         )
           .then((userCredential) => {
             if (userCredential.user && userCredential.user.emailVerified) {
-              return userCredential.user;
+              console.log(userCredential.user.displayName);
+              return {
+                name: userCredential.user.displayName,
+                email: userCredential.user.email,
+              };
             } else if (
               userCredential.user &&
               !userCredential.user.emailVerified
@@ -31,8 +35,8 @@ export const authOptions = {
             }
           })
           .catch((error) => {
-            console.log(error.message);
-            throw new Error(error);
+            console.log(error);
+            throw new Error(error.code);
           });
       },
     }),
