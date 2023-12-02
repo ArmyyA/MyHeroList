@@ -11,7 +11,7 @@ export default async function Nav() {
   const session = await getServerSession(authOptions);
   console.log(session?.user);
   return (
-    <nav className="flex justify-between items-center my-8 md:px-6">
+    <nav className="flex justify-between items-center my-8 ">
       <Link href="/">
         <h3 className="text-3xl font-normal flex align-middle items-center gap-2">
           <Image src={"/bat.svg"} width={35} height={35} />

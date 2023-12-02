@@ -21,7 +21,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className={spectral.className}>
         <SessionProvider>
-          <div className="mx-6 md:max-w-7xl md:mx-auto">
+          <div className="mx-6 md:max-w-7xl md:mx-auto md:px-6">
             <Nav />
             <Toaster />
             {children}

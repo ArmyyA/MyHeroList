@@ -11,6 +11,7 @@ const server = next({ dev });
 const handle = server.getRequestHandler();
 
 const { MongoClient } = require("mongodb");
+const { info } = require("autoprefixer");
 
 const uri =
   "mongodb+srv://admin:hello234@cluster0.qhj8gpn.mongodb.net/?retryWrites=true&w=majority";
@@ -118,40 +119,84 @@ server
     app.use(bodyParser.urlencoded({ extended: true }));
 
     // Get the n number of matching superhero based on field and its pattern
-    app.get(
-      "/api/heroes/search",
-      validateRequest(searchSchema),
-      async (req, res) => {
-        const { field, pattern, n } = req.query;
+    app.get("/api/heroes/search", async (req, res) => {
+      try {
+        const queryConditions = [];
 
-        if (!field || !pattern) {
-          return res
-            .status(400)
-            .json({ error: "Field and pattern queries must be provided." });
+        // Query the powersdb collection if a power is specified
+        if (req.query.Power) {
+          const powerQuery = { [req.query.Power]: "True" };
+          const powerCursor = powersdb.find(powerQuery);
+          const powerResults = await powerCursor.toArray();
+          const heroesWithSpecifiedPower = powerResults.map(
+            (doc) => doc.hero_names
+          );
+
+          // Add power condition to the query
+          if (heroesWithSpecifiedPower.length > 0) {
+            queryConditions.push({ name: { $in: heroesWithSpecifiedPower } });
+          }
         }
 
-        try {
-          const regex = new RegExp(pattern, "i");
-          const query = { [field]: regex };
+        // Add other criteria (name, race, publisher) to the query conditions if specified
+        ["name", "Race", "Publisher"].forEach((field) => {
+          if (req.query[field]) {
+            const escapedString = req.query[field].replace(
+              /[-[\]{}()*+?.,\\^$|#\s]/g,
+              "\\$&"
+            );
+            queryConditions.push({
+              [field]: new RegExp("^" + escapedString, "i"),
+            });
+          }
+        });
 
-          const cursor = infodb.find(query).sort({ id: 1 });
+        let heroes = [];
 
-          if (n) {
-            cursor.limit(parseInt(n, 10));
+        // Construct and execute the final query
+        const finalQuery =
+          queryConditions.length > 0 ? { $and: queryConditions } : {};
+        const resultsCursor = infodb.find(finalQuery);
+        heroes = await resultsCursor.toArray();
+
+        for (let i = 0; i < heroes.length; i++) {
+          const heroPowersCursor = powersdb.find({
+            hero_names: heroes[i].name,
+          });
+          const heroPowersResult = await heroPowersCursor.toArray();
+
+          if (heroPowersResult.length > 0) {
+            // Extract powers that are set to "True"
+            const powers = heroPowersResult[0];
+            heroes[i].powers = Object.keys(powers).filter(
+              (power) =>
+                powers[power] === "True" &&
+                power !== "hero_names" &&
+                power !== "_id"
+            );
+          } else {
+            heroes[i].powers = []; // No powers found for this hero
           }
 
-          const results = await cursor.toArray();
+          // Fetch image from the external API
+          const heroNameEncoded = encodeURIComponent(heroes[i].name);
+          const imgRes = await fetch(
+            `https://superheroapi.com/api/6817922361577086/search/${heroNameEncoded}`
+          );
+          const imgData = await imgRes.json();
 
-          if (results.length == 0) {
-            throw Error("No matches found!");
+          if (imgData.results && imgData.results.length > 0) {
+            heroes[i].image = imgData.results[0].image.url; // Add image URL to hero object
+          } else {
+            heroes[i].image = null; // No image found
           }
-          const ids = results.map((h) => h.id);
-          return res.json(ids);
-        } catch (err) {
-          res.status(500).json({ message: err.message });
         }
+
+        return res.json(heroes);
+      } catch (e) {
+        res.status(500).json({ error: e.message });
       }
-    );
+    });
 
     // Retrieves all possible powers that exist
     app.get("/api/powers", async (req, res) => {

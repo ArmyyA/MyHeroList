@@ -8,7 +8,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
 
 async function getHeroes() {
-  const heroIds = [68, 265, 622, 309];
+  const heroIds = [20, 265, 622, 309];
   const fetchPromise = heroIds.map(async (id) => {
     const heroRes = await fetch(`${process.env.NEXT_URL}api/heroes/${id}`);
     const hero = await heroRes.json();
@@ -42,7 +42,9 @@ export default async function Home() {
             over 500 heroes, leave reviews, and create personalized hero lists.
           </p>
           <div className="flex gap-7 mt-2 py-7 justify-center">
-            <Button>Get Searching</Button>
+            <Link href="/explore">
+              <Button>Get Searching</Button>
+            </Link>
             <Link href="/auth">
               <Button variant="outline">Create Account</Button>
             </Link>

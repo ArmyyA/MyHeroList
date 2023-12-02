@@ -23,7 +23,7 @@ export default function SignedIn({ name }) {
       <div className="p-2">
         <DropdownMenu>
           <DropdownMenuTrigger className="outline-none drop-shadow-md">
-            <Image
+            <img
               width={74}
               height={74}
               src={"/bat.png"}
