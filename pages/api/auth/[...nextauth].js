@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/app/firebase";
+import jwt from "jsonwebtoken";
 
 export const authOptions = {
   // Configure one or more authentication providers
@@ -18,13 +19,9 @@ export const authOptions = {
           credentials.email || "",
           credentials.password || ""
         )
-          .then((userCredential) => {
+          .then(async (userCredential) => {
             if (userCredential.user && userCredential.user.emailVerified) {
-              console.log(userCredential.user.displayName);
-              return {
-                name: userCredential.user.displayName,
-                email: userCredential.user.email,
-              };
+              return userCredential.user;
             } else if (
               userCredential.user &&
               !userCredential.user.emailVerified
@@ -41,5 +38,33 @@ export const authOptions = {
       },
     }),
   ],
+  callbacks: {
+    async jwt({ token, user }) {
+      // Persist the OAuth access_token and or the user id to the token right after signin
+      if (user) {
+        token.uid = user.uid;
+        token.email = user.email;
+        token.name = user.displayName;
+
+        const customToken = jwt.sign(
+          { uid: user.uid, email: user.email },
+          process.env.JWT_SECRET,
+          { expiresIn: "1h" }
+        );
+        token.accessToken = customToken;
+      }
+      return token;
+    },
+    async session(session, token, user) {
+      console.log(session.user);
+      session.user = token;
+      console.log(session.user);
+
+      return session;
+    },
+  },
+  session: {
+    strategy: "jwt",
+  },
 };
 export default NextAuth(authOptions);

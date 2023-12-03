@@ -16,6 +16,7 @@ import { useEffect, useState } from "react";
 import { Separator } from "@/components/ui/separator";
 import HeroCard from "@/components/heroCard";
 import { useSession } from "next-auth/react";
+import { getSession } from "next-auth/react";
 
 import {
   Select,
@@ -31,6 +32,32 @@ async function fetchPowers() {
   const powersRes = await fetch(`/api/powers`);
   const powers = await powersRes.json();
   return powers;
+}
+
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(";").shift();
+}
+
+async function createList() {
+  const session = await getSession();
+  const token = session?.token.accessToken;
+  console.log(token);
+  const res = await fetch("/api/list/create", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      listname: "Test4",
+      description: "null",
+      rating: 5,
+    }),
+    credentials: "include",
+  });
+  console.log(res);
 }
 
 export default function Explore() {
@@ -170,7 +197,9 @@ export default function Explore() {
             </div>
           </TabsContent>
           <TabsContent value="list">
-            <div className="flex gap-10 mt-10 justify-center items-end"></div>
+            <div className="flex gap-10 mt-10 justify-center items-end">
+              <Button onClick={createList}>Create</Button>
+            </div>
           </TabsContent>
         </Tabs>
       </div>

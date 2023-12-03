@@ -22,12 +22,11 @@ import { useRouter } from "next/navigation";
 import { sendPasswordResetEmail } from "firebase/auth";
 import ForgotPass from "./ForgotPass";
 import { useSession } from "next-auth/react";
+import { getSession } from "next-auth/react";
 
 export default function LogIn({ variant }) {
   const { toast } = useToast();
   const router = useRouter();
-  const { data: session, status, update } = useSession();
-  const username = session?.user.name;
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -58,8 +57,6 @@ export default function LogIn({ variant }) {
             "Your email is not verified. Sign-up again and please verify your email before continuing!",
         });
     } else {
-      update();
-
       await toast({
         title: "Successfully logged in!",
       });
@@ -67,7 +64,11 @@ export default function LogIn({ variant }) {
       router.push("/");
       router.refresh();
 
-      console.log(session?.user);
+      const session = await getSession();
+
+      const username = session?.session.user.name;
+      console.log("Reached");
+      console.log(session);
       await fetch("/api/user/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

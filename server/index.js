@@ -4,6 +4,8 @@ const next = require("next");
 const Joi = require("joi");
 const bcrypt = require("bcrypt");
 const stringSimilarity = require("string-similarity");
+const { getServerSession, getSession } = require("next-auth/react");
+const { getToken } = require("next-auth/jwt");
 
 const auth = require("next-auth");
 
@@ -23,6 +25,7 @@ const database = client.db("Heroes");
 const infodb = database.collection("info");
 const powersdb = database.collection("powers");
 const userdb = database.collection("user");
+const jwt = require("jsonwebtoken");
 
 // Define the Joi schema for search pattern input validation
 const searchSchema = Joi.object({
@@ -33,6 +36,29 @@ const searchSchema = Joi.object({
     .required(),
   n: Joi.number().integer().min(0).allow("", null).optional(),
 });
+
+async function authenticate(req, res, next) {
+  try {
+    const authHeader = req.headers.authorization || "";
+    const token = authHeader.split(" ")[1]; // Extract the token from the header
+
+    if (!token) {
+      return res.status(401).json({ message: "No token provided" });
+    }
+
+    console.log(token);
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded) {
+      req.user = decoded;
+      next(); // User is authenticated, proceed to the next middleware
+    } else {
+      res.status(401).json({ message: "Unauthorized" });
+    }
+  } catch (error) {
+    res.status(401).json({ message: "Unauthorized" });
+  }
+}
 
 // Define the Joi schema for power input validation
 const powerSchema = Joi.object({
@@ -367,6 +393,8 @@ server
         const newUser = {
           email: email,
           username: username,
+          lists: [],
+          role: "regular",
         };
         await userdb.insertOne(newUser);
 
@@ -396,20 +424,89 @@ server
       }
     });
 
+    app.get("/api/lists/recent", async (req, res) => {
+      try {
+        // Aggregate the lists from all documents, sort them by lastModified, and limit to 10
+        const recentLists = await userdb
+          .aggregate([
+            { $unwind: "$lists" }, // Deconstructs the lists array
+            { $sort: { "lists.lastModified": -1 } }, // Sorts by lastModified in descending order
+            { $limit: 10 }, // Limits to the 10 most recent
+            { $project: { _id: 0, lists: 1 } }, // Project only the lists field
+          ])
+          .toArray();
+
+        // Extracting the lists from the aggregation result
+        const lists = recentLists.map((item) => item.lists);
+
+        res.status(200).json(lists);
+      } catch (err) {
+        res.status(500).json({ message: err.message });
+      }
+    });
+
+    app.post("/api/list/create", authenticate, async (req, res) => {
+      const { listname } = req.body;
+      const { description } = req.body;
+      const { rating } = req.body;
+
+      if (!listname || listname === "") {
+        return res.status(400).json({ error: "No name was provided!" });
+      }
+
+      try {
+        const userEmail = req.user.email;
+        // Check if a list with the same name already exists
+        const existingList = await userdb.findOne({ "lists.name": listname });
+
+        if (existingList) {
+          return res
+            .status(400)
+            .json({ message: "A list with the name already exists!" });
+        }
+
+        const currentTime = new Date();
+
+        await userdb.updateOne(
+          { email: userEmail },
+          {
+            $push: {
+              lists: {
+                name: listname,
+                heroes: [],
+                description: description,
+                rating: rating,
+                lastModified: currentTime,
+              },
+            },
+          }
+        );
+
+        return res
+          .status(200)
+          .json({ message: "List was created successfully" });
+      } catch (err) {
+        res.status(500).json({ message: err.message });
+      }
+    });
+
     // Post a new list with the provided name, if possible
     app.post(
       "/api/mylists",
       validateRequest(listnameSchema),
       async (req, res) => {
         const { listname } = req.body;
+        const { description } = req.body;
+        const { rating } = req.body;
 
         if (!listname || listname === "") {
           return res.status(400).json({ error: "No name was provided!" });
         }
 
         try {
+          const userEmail = req.user.email;
           // Check if a list with the same name already exists
-          const existingList = await userdb.findOne({ name: listname });
+          const existingList = await userdb.findOne({ "lists.name": listname });
 
           if (existingList) {
             return res
@@ -417,8 +514,19 @@ server
               .json({ message: "A list with the name already exists!" });
           }
 
-          // Insert the new list
-          await userdb.insertOne({ name: listname, heroes: [] });
+          await userdb.updateOne(
+            { email: userEmail },
+            {
+              $push: {
+                lists: {
+                  name: listname,
+                  heroes: [],
+                  description: description,
+                  rating: rating,
+                },
+              },
+            }
+          );
 
           return res
             .status(200)
