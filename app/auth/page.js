@@ -45,20 +45,13 @@ export default function Auth() {
       );
       await sendEmailVerification(userCred.user);
       await updateProfile(userCred.user, { displayName: username });
-      console.log(userCred.user.displayName);
-      const res = await fetch("/api/user/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, username }),
-      });
-      console.log(res);
       toast({
         title: "Just one more step!",
         description:
           "Before you can sign in, you will need to verify your email. Please check your inbox for verification instructions.",
       });
     } catch (err) {
-      console.log(err);
+      console.log(err.code);
       if (err.code === "auth/email-already-in-use") {
         let message = "Email is already in use!";
         toast({

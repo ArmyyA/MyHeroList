@@ -21,10 +21,13 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { sendPasswordResetEmail } from "firebase/auth";
 import ForgotPass from "./ForgotPass";
+import { useSession } from "next-auth/react";
 
 export default function LogIn({ variant }) {
   const { toast } = useToast();
   const router = useRouter();
+  const { data: session, status, update } = useSession();
+  const username = session?.user.name;
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -35,7 +38,7 @@ export default function LogIn({ variant }) {
       redirect: false,
     });
 
-    console.log(res.error);
+    console.log(res);
     if (!res.ok) {
       if (res.error == "auth/user-disabled") {
         toast({
@@ -44,19 +47,32 @@ export default function LogIn({ variant }) {
             "It seems like your account is disabled. Please contact the administrator",
         });
       } else if (res.error == "auth/invalid-credential") {
-        let message = res.error;
         toast({
           title: "Uh-oh!",
           description: "Your credentials are invalid. Please try again!",
         });
-      }
+      } else
+        toast({
+          title: "Uh-oh!",
+          description:
+            "Your email is not verified. Sign-up again and please verify your email before continuing!",
+        });
     } else {
+      update();
+
       await toast({
         title: "Successfully logged in!",
       });
 
       router.push("/");
       router.refresh();
+
+      console.log(session?.user);
+      await fetch("/api/user/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, username }),
+      });
     }
   };
   const [email, setEmail] = useState("");

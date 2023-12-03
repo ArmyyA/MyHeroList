@@ -14,6 +14,7 @@ import {
 } from "./ui/dialog";
 
 export default function HeroCard({
+  id,
   name,
   image,
   publisher,
@@ -35,7 +36,7 @@ export default function HeroCard({
   return (
     <div>
       <Card className="shadow-inner">
-        <img src={image} width={210} height={50} className="rounded-md" />
+        <img src={image} width={235} height={50} className="rounded-md" />
         <CardHeader>
           <div className="flex-col space-y-4 mb-4">
             <CardTitle className="">{name}</CardTitle>
@@ -56,7 +57,9 @@ export default function HeroCard({
                     className="rounded-md w-m shadow-md"
                   />
                   <div className="flex-col space-y-2  text-left">
-                    <DialogTitle className="text-3xl">{name}</DialogTitle>
+                    <DialogTitle className="text-3xl">
+                      {id}. {name}
+                    </DialogTitle>
                     <Badge>{publisher}</Badge>
                     <p>
                       <strong>Gender: </strong>

@@ -8,7 +8,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
 
 async function getHeroes() {
-  const heroIds = [20, 265, 622, 309];
+  const heroIds = [68, 265, 622, 309];
   const fetchPromise = heroIds.map(async (id) => {
     const heroRes = await fetch(`${process.env.NEXT_URL}api/heroes/${id}`);
     const hero = await heroRes.json();
@@ -61,6 +61,7 @@ export default async function Home() {
         <div className="flex justify-center gap-11 py-6">
           {heroes.map((hero) => (
             <HeroCard
+              id={hero.id}
               image={hero.image}
               gender={hero.Gender}
               name={hero.name}

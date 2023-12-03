@@ -3,6 +3,7 @@ const bodyParser = require("body-parser");
 const next = require("next");
 const Joi = require("joi");
 const bcrypt = require("bcrypt");
+const stringSimilarity = require("string-similarity");
 
 const auth = require("next-auth");
 
@@ -118,12 +119,10 @@ server
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded({ extended: true }));
 
-    // Get the n number of matching superhero based on field and its pattern
     app.get("/api/heroes/search", async (req, res) => {
       try {
-        const queryConditions = [];
+        let heroes = await infodb.find({}).toArray();
 
-        // Query the powersdb collection if a power is specified
         if (req.query.Power) {
           const powerQuery = { [req.query.Power]: "True" };
           const powerCursor = powersdb.find(powerQuery);
@@ -131,43 +130,40 @@ server
           const heroesWithSpecifiedPower = powerResults.map(
             (doc) => doc.hero_names
           );
-
-          // Add power condition to the query
-          if (heroesWithSpecifiedPower.length > 0) {
-            queryConditions.push({ name: { $in: heroesWithSpecifiedPower } });
-          }
+          heroes = heroes.filter((hero) =>
+            heroesWithSpecifiedPower.includes(hero.name)
+          );
         }
 
-        // Add other criteria (name, race, publisher) to the query conditions if specified
         ["name", "Race", "Publisher"].forEach((field) => {
           if (req.query[field]) {
-            const escapedString = req.query[field].replace(
-              /[-[\]{}()*+?.,\\^$|#\s]/g,
-              "\\$&"
-            );
-            queryConditions.push({
-              [field]: new RegExp("^" + escapedString, "i"),
+            const searchString = req.query[field].toLowerCase();
+            heroes = heroes.filter((hero) => {
+              const fieldValue = hero[field] ? hero[field].toLowerCase() : "";
+              const beginningOfField = fieldValue.substring(
+                0,
+                searchString.length
+              );
+              return (
+                stringSimilarity.compareTwoStrings(
+                  searchString,
+                  beginningOfField
+                ) > 0.5
+              ); // Adjust threshold as needed
             });
           }
         });
 
-        let heroes = [];
-
-        // Construct and execute the final query
-        const finalQuery =
-          queryConditions.length > 0 ? { $and: queryConditions } : {};
-        const resultsCursor = infodb.find(finalQuery);
-        heroes = await resultsCursor.toArray();
-
         for (let i = 0; i < heroes.length; i++) {
+          // Query for each hero's powers
           const heroPowersCursor = powersdb.find({
             hero_names: heroes[i].name,
           });
           const heroPowersResult = await heroPowersCursor.toArray();
 
           if (heroPowersResult.length > 0) {
-            // Extract powers that are set to "True"
             const powers = heroPowersResult[0];
+            // Filter and add powers set to "True"
             heroes[i].powers = Object.keys(powers).filter(
               (power) =>
                 powers[power] === "True" &&
@@ -178,7 +174,6 @@ server
             heroes[i].powers = []; // No powers found for this hero
           }
 
-          // Fetch image from the external API
           const heroNameEncoded = encodeURIComponent(heroes[i].name);
           const imgRes = await fetch(
             `https://superheroapi.com/api/6817922361577086/search/${heroNameEncoded}`
@@ -186,9 +181,9 @@ server
           const imgData = await imgRes.json();
 
           if (imgData.results && imgData.results.length > 0) {
-            heroes[i].image = imgData.results[0].image.url; // Add image URL to hero object
+            heroes[i].image = imgData.results[0].image.url;
           } else {
-            heroes[i].image = null; // No image found
+            heroes[i].image = null;
           }
         }
 
@@ -341,10 +336,27 @@ server
       }
     });
 
+    app.get("/api/user", async (req, res) => {
+      try {
+        const { email } = req.body;
+        const exists = await userdb.findOne({ email });
+        console.log(exists);
+        if (exists) {
+          return res.json({
+            msg: "Uh-oh, an account with this email already exists!",
+          });
+        }
+
+        res.status(201).json({ msg: "Success" });
+      } catch (err) {
+        console.log(err.message);
+        res.status(500).send("Error");
+      }
+    });
+
     app.post("/api/user/register", async (req, res) => {
       try {
         const { email, username } = req.body;
-        console.log("Reached");
         const exists = await userdb.findOne({ email });
         if (exists) {
           return res
@@ -358,9 +370,7 @@ server
         };
         await userdb.insertOne(newUser);
 
-        res
-          .status(201)
-          .json({ msg: "User successfully registered! Enjoy exploring." });
+        res.status(201).json({ msg: "Success" });
       } catch (err) {
         console.log(err.message);
         res.status(500).send("Error");
