@@ -28,7 +28,7 @@ export default async function DashList({ token }) {
       {lists.map((list, index) => (
         <div className="" key={index}>
           <EditList
-            name={list.name}
+            listname={list.name}
             username={list.username}
             heroNum={list.heroes.length}
             rating={list.rating}

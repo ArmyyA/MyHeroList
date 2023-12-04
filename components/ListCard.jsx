@@ -40,19 +40,6 @@ export default function ListCard({
               </div>
             </CardDescription>
           </div>{" "}
-          <Dialog>
-            <DialogTrigger asChild></DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <div className="flex gap-6 w-full">
-                  <div className="flex-col space-y-2 text-left">
-                    <DialogTitle className="text-3xl">{name}</DialogTitle>
-                    <Badge>{username}</Badge>
-                  </div>
-                </div>
-              </DialogHeader>
-            </DialogContent>
-          </Dialog>
           <Link href={`/lists/${name}`}>
             <Button className="w-full" variant="outline">
               View List

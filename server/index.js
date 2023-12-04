@@ -278,6 +278,15 @@ server
       }
 
       const heroName = hero.name;
+      const heroNameEncoded = encodeURIComponent(heroName);
+
+      const imgRes = await fetch(
+        `https://superheroapi.com/api/6817922361577086/search/${heroNameEncoded}`
+      );
+      const imgData = await imgRes.json();
+
+      // Extract the image URL from the response
+      const imageUrl = imgData.results[0].image.url; // Make sure to handle cases where this might not exist
 
       const powers = await powersdb.findOne({ hero_names: heroName });
 
@@ -289,12 +298,13 @@ server
           )
           .map(([power]) => power);
 
-        const heroWithPowers = {
+        const heroWithPowersAndImage = {
           ...hero,
           powers: powersResult,
+          image: imageUrl,
         };
-        console.log(heroWithPowers);
-        return res.json(heroWithPowers);
+        console.log(heroWithPowersAndImage);
+        return res.json(heroWithPowersAndImage);
       }
 
       return res.json(hero);
@@ -563,6 +573,75 @@ server
         return res
           .status(200)
           .json({ message: "List was created successfully" });
+      } catch (err) {
+        res.status(500).json({ message: err.message });
+      }
+    });
+
+    app.put("/api/lists/:listname/update", authenticate, async (req, res) => {
+      const oldListname = req.params.listname;
+      const email = req.user.email;
+      const { newListname, description, heroAdds, heroRemoves, public } =
+        req.body;
+      try {
+        // Check if a list with the new name already exists across all users (if the name is being changed)
+        if (newListname && newListname !== oldListname) {
+          const existingList = await userdb.findOne({
+            "lists.name": newListname,
+          });
+          if (existingList) {
+            return res.status(400).json({
+              message: "A list with the new name already exists across users!",
+            });
+          }
+        }
+
+        // Find the document that needs to be updated
+        const userDocument = await userdb.findOne({
+          email: email,
+          "lists.name": oldListname,
+        });
+        if (!userDocument) {
+          return res.status(404).json({ message: "List not found" });
+        }
+
+        // Prepare the update objects
+        let setOps = {};
+        let addToSetOps = {};
+
+        if (newListname !== undefined) setOps["lists.$.name"] = newListname;
+        if (description !== undefined)
+          setOps["lists.$.description"] = description;
+        if (public !== undefined) setOps["lists.$.public"] = public;
+
+        if (heroAdds && heroAdds.length) {
+          addToSetOps["lists.$.heroes"] = { $each: heroAdds };
+        }
+
+        // Update the list with new fields and add heroes
+        await userdb.updateOne(
+          { email: email, "lists.name": oldListname },
+          {
+            ...(Object.keys(setOps).length > 0 && { $set: setOps }),
+            ...(Object.keys(addToSetOps).length > 0 && {
+              $addToSet: addToSetOps,
+            }),
+            $currentDate: { "lists.$.lastModified": true },
+          }
+        );
+
+        // If there are heroes to remove
+        if (heroRemoves && heroRemoves.length) {
+          await userdb.updateOne(
+            { email: email, "lists.name": oldListname },
+            {
+              $pullAll: { "lists.$.heroes": heroRemoves },
+              $currentDate: { "lists.$.lastModified": true },
+            }
+          );
+        }
+
+        res.status(200).json({ message: "List updated successfully" });
       } catch (err) {
         res.status(500).json({ message: err.message });
       }
