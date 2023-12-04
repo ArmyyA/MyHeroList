@@ -21,13 +21,13 @@ async function getHeroes() {
     return { ...hero, image: heroImg.url };
   });
   const heroes = await Promise.all(fetchPromise);
+  console.log(heroes);
 
   return heroes;
 }
 
 export default async function Home() {
   const session = await getServerSession(authOptions);
-  console.log(session);
 
   const heroes = await getHeroes();
   return (
@@ -74,7 +74,7 @@ export default async function Home() {
               skin={hero["Skin color"]}
               align={hero.Alignment}
               weight={hero.Weight}
-              powers={hero.powers.join(", ")}
+              powers={hero.powers?.join(", ")}
             />
           ))}
         </div>

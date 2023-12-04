@@ -1,5 +1,5 @@
 "use client";
-
+import ListCard from "@/components/ListCard";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -27,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import ListInterface from "@/components/ListInterface";
 
 async function fetchPowers() {
   const powersRes = await fetch(`/api/powers`);
@@ -34,30 +35,13 @@ async function fetchPowers() {
   return powers;
 }
 
-function getCookie(name) {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(";").shift();
-}
+async function getList() {
+  console.log("Reached");
+  const listRes = await fetch(`/api/lists/recent`);
+  const res = await listRes.json();
 
-async function createList() {
-  const session = await getSession();
-  const token = session?.token.accessToken;
-  console.log(token);
-  const res = await fetch("/api/list/create", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({
-      listname: "Test4",
-      description: "null",
-      rating: 5,
-    }),
-    credentials: "include",
-  });
   console.log(res);
+  return res;
 }
 
 export default function Explore() {
@@ -67,11 +51,14 @@ export default function Explore() {
   const [race, setRace] = useState();
   const [publisher, setPublisher] = useState();
   const { data: session, status } = useSession();
+  const [lists, setLists] = useState([]);
 
   const [powers, setPowers] = useState([]);
 
   useEffect(() => {
     fetchPowers().then(setPowers);
+
+    getList().then((res) => setLists(res));
   }, []);
 
   async function getHeroes() {
@@ -99,8 +86,9 @@ export default function Explore() {
   const handleChange = (newValue) => {
     setPower(newValue);
   };
-  console.log(session);
-  console.log(status);
+
+  const user = session?.session.user;
+
   return (
     <main>
       <div className="flex-col text-center justify-center pt-20 space-y-3">
@@ -197,8 +185,18 @@ export default function Explore() {
             </div>
           </TabsContent>
           <TabsContent value="list">
-            <div className="flex gap-10 mt-10 justify-center items-end">
-              <Button onClick={createList}>Create</Button>
+            {user && <ListInterface />}
+            <div className="flex flex-wrap justify-center gap-11 py-6 mt-20">
+              {lists.map((list, index) => (
+                <div className="" key={index}>
+                  <ListCard
+                    name={list.name}
+                    username={list.username}
+                    heroNum={list.heroes.length}
+                    rating={list.rating}
+                  />
+                </div>
+              ))}
             </div>
           </TabsContent>
         </Tabs>

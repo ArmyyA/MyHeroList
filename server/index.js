@@ -46,8 +46,6 @@ async function authenticate(req, res, next) {
       return res.status(401).json({ message: "No token provided" });
     }
 
-    console.log(token);
-
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     if (decoded) {
       req.user = decoded;
@@ -273,6 +271,7 @@ server
       const id = parseInt(req.params.id);
 
       const hero = await infodb.findOne({ id: id });
+      console.log("Reached");
 
       if (!hero) {
         return res.status(404).json({ message: "Hero not found!" });
@@ -294,6 +293,7 @@ server
           ...hero,
           powers: powersResult,
         };
+        console.log(heroWithPowers);
         return res.json(heroWithPowers);
       }
 
@@ -432,12 +432,15 @@ server
             { $unwind: "$lists" }, // Deconstructs the lists array
             { $sort: { "lists.lastModified": -1 } }, // Sorts by lastModified in descending order
             { $limit: 10 }, // Limits to the 10 most recent
-            { $project: { _id: 0, lists: 1 } }, // Project only the lists field
+            { $project: { _id: 0, lists: 1, username: 1 } }, // Project only the lists field
           ])
           .toArray();
 
         // Extracting the lists from the aggregation result
-        const lists = recentLists.map((item) => item.lists);
+        const lists = recentLists.map((item) => ({
+          ...item.lists,
+          username: item.username,
+        }));
 
         res.status(200).json(lists);
       } catch (err) {
@@ -445,10 +448,33 @@ server
       }
     });
 
-    app.post("/api/list/create", authenticate, async (req, res) => {
+    app.get("/api/lists/:listname", async (req, res) => {
+      const listname = req.params.listname;
+      try {
+        // Find a document with the specified listname
+        const query = { lists: { $elemMatch: { name: listname } } };
+        const doc = await userdb.findOne(query);
+
+        if (doc) {
+          const list = doc.lists.find((list) => list.name === listname);
+          console.log(list);
+          const username = doc.username;
+          const item = { ...list, username };
+          res.status(200).json(item);
+        } else {
+          res.status(500).json({ message: "Listname not found." });
+        }
+      } catch (err) {
+        res.status(500).json({ message: err.message });
+      }
+    });
+
+    app.post("/api/lists/create", authenticate, async (req, res) => {
       const { listname } = req.body;
       const { description } = req.body;
       const { rating } = req.body;
+      const { heroes } = req.body;
+      const { public } = req.body;
 
       if (!listname || listname === "") {
         return res.status(400).json({ error: "No name was provided!" });
@@ -473,7 +499,8 @@ server
             $push: {
               lists: {
                 name: listname,
-                heroes: [],
+                heroes: heroes,
+                public: public,
                 description: description,
                 rating: rating,
                 lastModified: currentTime,
