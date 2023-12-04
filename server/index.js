@@ -430,8 +430,59 @@ server
         const recentLists = await userdb
           .aggregate([
             { $unwind: "$lists" }, // Deconstructs the lists array
+            { $match: { "lists.public": true } }, // Only include documents where lists.public is true
             { $sort: { "lists.lastModified": -1 } }, // Sorts by lastModified in descending order
             { $limit: 10 }, // Limits to the 10 most recent
+            { $project: { _id: 0, lists: 1, username: 1 } }, // Project only the lists field
+          ])
+          .toArray();
+
+        // Extracting the lists from the aggregation result
+        const lists = recentLists.map((item) => ({
+          ...item.lists,
+          username: item.username,
+        }));
+
+        res.status(200).json(lists);
+      } catch (err) {
+        res.status(500).json({ message: err.message });
+      }
+    });
+
+    app.get("/api/lists/auth/mylists", authenticate, async (req, res) => {
+      const email = req.user.email;
+      console.log(email);
+      try {
+        if (!email) {
+          return res.status(400).json({ message: "No email was found." });
+        }
+        const doc = await userdb.findOne(
+          { email: email },
+          { projection: { _id: 0, lists: 1, username: 1 } }
+        );
+        if (!doc) {
+          return res.status(400).json({ message: "User not found." });
+        }
+        const listsWithUsername = doc.lists.map((list) => ({
+          ...list,
+          username: doc.username,
+        }));
+        console.log(listsWithUsername);
+        res.status(200).json(listsWithUsername);
+      } catch (err) {
+        res.status(500).json({ message: err.message });
+      }
+    });
+
+    app.get("/api/lists/auth/recent", authenticate, async (req, res) => {
+      try {
+        // Aggregate the lists from all documents, sort them by lastModified, and limit to 10
+        const recentLists = await userdb
+          .aggregate([
+            { $unwind: "$lists" }, // Deconstructs the lists array
+            { $match: { "lists.public": true } }, // Only include documents where lists.public is true
+            { $sort: { "lists.lastModified": -1 } }, // Sorts by lastModified in descending order
+            { $limit: 20 }, // Limits to the 10 most recent
             { $project: { _id: 0, lists: 1, username: 1 } }, // Project only the lists field
           ])
           .toArray();

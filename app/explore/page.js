@@ -17,6 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import HeroCard from "@/components/heroCard";
 import { useSession } from "next-auth/react";
 import { getSession } from "next-auth/react";
+import { getToken } from "next-auth/jwt";
 
 import {
   Select,
@@ -36,11 +37,26 @@ async function fetchPowers() {
 }
 
 async function getList() {
-  console.log("Reached");
-  const listRes = await fetch(`/api/lists/recent`);
-  const res = await listRes.json();
+  const session = await getSession();
+  const token = session?.token;
+  let url;
+  let options = {};
 
-  console.log(res);
+  if (token) {
+    url = `/api/lists/auth/recent`;
+    const accessToken = token.accessToken;
+
+    options.headers = {
+      Authorization: `Bearer ${accessToken}`,
+    };
+  } else {
+    url = `/api/lists/recent`;
+  }
+
+  console.log(url);
+  const listData = await fetch(url, options);
+  const res = await listData.json();
+
   return res;
 }
 
@@ -58,7 +74,7 @@ export default function Explore() {
   useEffect(() => {
     fetchPowers().then(setPowers);
 
-    getList().then((res) => setLists(res));
+    getList(status).then((res) => setLists(res));
   }, []);
 
   async function getHeroes() {
@@ -74,8 +90,6 @@ export default function Explore() {
       )}&Power=${encodeURIComponent(power || "")}`
     );
     const heroes = await heroRes.json();
-
-    console.log(heroes);
 
     if (heroes.length == 0) {
       setHeroes(["No Heroes Found"]);
