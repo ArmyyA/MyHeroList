@@ -24,21 +24,31 @@ export default async function DashList({ token }) {
   const lists = await getLists(token);
   console.log(lists.heroes);
   console.log("Reached");
-  console.log(lists[0].public);
+
   return (
     <div className="flex flex-wrap justify-center gap-11 py-6 mt-10">
-      {lists.map((list, index) => (
-        <div className="" key={index}>
-          <EditList
-            listname={list.name}
-            username={list.username}
-            heroNum={list.heroes.length}
-            rating={list.rating}
-            edit={true}
-            visibility={list.public}
-          />
-        </div>
-      ))}
+      {lists.map((list, index) => {
+        const averageRating =
+          list.review && list.review.length > 0
+            ? list.review.reduce((acc, curr) => acc + curr.rating, 0) /
+              list.review.length
+            : 0;
+
+        // Round the average to one decimal place (optional)
+        const roundedAverageRating = Math.round(averageRating * 10) / 10;
+        return (
+          <div className="" key={index}>
+            <EditList
+              listname={list.name}
+              username={list.username}
+              heroNum={list.heroes.length}
+              rating={roundedAverageRating}
+              edit={true}
+              visibility={list.public}
+            />
+          </div>
+        );
+      })}
     </div>
   );
 }

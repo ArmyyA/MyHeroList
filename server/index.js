@@ -533,7 +533,7 @@ server
     app.post("/api/lists/create", authenticate, async (req, res) => {
       const { listname } = req.body;
       const { description } = req.body;
-      const { rating } = req.body;
+      const { review } = req.body;
       const { heroes } = req.body;
       const { public } = req.body;
 
@@ -563,7 +563,7 @@ server
                 heroes: heroes,
                 public: public,
                 description: description,
-                rating: rating,
+                review: review,
                 lastModified: currentTime,
               },
             },
@@ -650,28 +650,39 @@ server
       }
     });
 
-    app.delete("/api/lists/:listname", authenticate, async (req, res) => {
+    app.post("/api/lists/:listname/review", authenticate, async (req, res) => {
       const listname = req.params.listname;
+      const { rating, comment } = req.body;
+
+      // Validate the input
+      if (
+        typeof rating !== "number" ||
+        rating < 0 ||
+        rating > 5 ||
+        typeof comment !== "string"
+      ) {
+        return res.status(400).json({
+          message:
+            "Rating must be a number between 0 and 5 and a valid comment is required.",
+        });
+      }
 
       try {
-        // Find the document that contains the list to be deleted
-        const existingList = await userdb.findOne({ "lists.name": listname });
+        const review = { rating, comment }; // Construct the review object
 
-        if (!existingList) {
-          return res.status(404).json({ message: "List not found" });
-        }
-
-        // Remove the list from the document
+        // Push the new review object into the review array of the specified list
         const result = await userdb.updateOne(
-          { _id: existingList._id },
-          { $pull: { lists: { name: listname } } }
+          { "lists.name": listname },
+          { $push: { "lists.$.review": review } }
         );
 
         if (result.modifiedCount === 0) {
-          return res.status(400).json({ message: "List could not be deleted" });
+          return res
+            .status(404)
+            .json({ message: "List not found or no update required" });
         }
 
-        res.status(200).json({ message: "List deleted successfully" });
+        res.status(200).json({ message: "Review added successfully" });
       } catch (err) {
         res.status(500).json({ message: err.message });
       }

@@ -4,6 +4,12 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/app/firebase";
 import jwt from "jsonwebtoken";
 
+import { MongoClient } from "mongodb";
+
+const client = new MongoClient(process.env.MONGODB_URI);
+await client.connect();
+const db = client.db("Heroes");
+
 export const authOptions = {
   // Configure one or more authentication providers
   pages: {
@@ -42,6 +48,9 @@ export const authOptions = {
     async jwt({ token, user }) {
       // Persist the OAuth access_token and or the user id to the token right after signin
       if (user) {
+        const userdb = db.collection("user");
+        const userDoc = await userdb.findOne({ email: user.email });
+        token.role = userDoc?.role;
         token.uid = user.uid;
         token.email = user.email;
         token.name = user.displayName;

@@ -1,11 +1,24 @@
 "use client";
 
+import AddReview from "@/components/AddReview";
 import { list } from "postcss";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import HeroCard from "@/components/heroCard";
 import { useState } from "react";
 import { useEffect } from "react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardDescription,
+  CardTitle,
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { useSession } from "next-auth/react";
 
 async function getList(name) {
   console.log("Reached");
@@ -34,6 +47,8 @@ async function getHeroes(heroIds) {
 export default function Page({ params }) {
   const [listinfo, setListInfo] = useState(null);
   const [heroes, setHeroes] = useState([]);
+  const { data: session, status } = useSession();
+  const user = session?.session.user;
 
   // Function to refresh data
   const refreshData = async () => {
@@ -52,13 +67,39 @@ export default function Page({ params }) {
     <main>
       <div className="flex justify-center mb-6">
         <div className="mt-40 flex-col space-y-7 text-center">
-          <h1 className="text-5xl font-semibold text-gray-800">
-            {listinfo?.name} by {listinfo?.username}
+          <h1 className="text-5xl font-light text-gray-800">
+            <strong>{listinfo?.name}</strong> by {listinfo?.username}
           </h1>
           <p className="text-xl max-w-4xl mx-auto">{listinfo?.description}</p>
         </div>
       </div>
-      <div className="mt-36 mb-10">
+      <div className="flex-col space-y-2 mb-4">
+        <h2 className="scroll-m-20 border-b pb-2 text-3xl font-semibold text-gray-800 tracking-tight text-center first:mt-0"></h2>
+      </div>
+      <div className="mt-32 ">
+        <h1 className="text-3xl font-semibold text-gray-800 text-center">
+          Reviews
+        </h1>
+        <div className="flex justify-center text-center items-center">
+          <ScrollArea className="h-[200px] w-2/5 rounded-md border p-4 mt-8">
+            {listinfo?.review.map((review, index) => (
+              <Card key={index} className="w-full shadow-sm mb-4">
+                <CardHeader>
+                  <CardTitle>{review.rating}/5</CardTitle>
+                  <CardDescription className="mt-3">
+                    {review.comment ? review.comment : "No comment"}
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            ))}
+          </ScrollArea>
+        </div>
+        <div className="flex justify-center mt-5">
+          {user && <AddReview listname={listinfo?.name} />}
+        </div>
+      </div>
+
+      <div className="mt-28 mb-10">
         <div className="flex-col space-y-2 mb-4">
           <h2 className="scroll-m-20 border-b pb-2 text-3xl font-semibold text-gray-800 tracking-tight text-center first:mt-0">
             List Heroes

@@ -15,7 +15,6 @@ import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import LogIn from "@/components/LogIn";
-import { getServerSession } from "next-auth";
 
 import { useRouter } from "next/navigation";
 
@@ -23,7 +22,6 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase";
 import { sendEmailVerification } from "firebase/auth";
 import { updateProfile } from "firebase/auth";
-import { authOptions } from "@/pages/api/auth/[...nextauth]";
 
 export default function Auth() {
   const [email, setEmail] = useState("");

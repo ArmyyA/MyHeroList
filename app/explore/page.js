@@ -201,16 +201,27 @@ export default function Explore() {
           <TabsContent value="list">
             {user && <ListInterface />}
             <div className="flex flex-wrap justify-center gap-11 py-6 mt-20">
-              {lists.map((list, index) => (
-                <div className="" key={index}>
-                  <ListCard
-                    name={list.name}
-                    username={list.username}
-                    heroNum={list.heroes.length}
-                    rating={list.rating}
-                  />
-                </div>
-              ))}
+              {lists.map((list, index) => {
+                const averageRating =
+                  list.review && list.review.length > 0
+                    ? list.review.reduce((acc, curr) => acc + curr.rating, 0) /
+                      list.review.length
+                    : 0;
+
+                // Round the average to one decimal place (optional)
+                const roundedAverageRating =
+                  Math.round(averageRating * 10) / 10;
+                return (
+                  <div className="" key={index}>
+                    <ListCard
+                      name={list.name}
+                      username={list.username}
+                      heroNum={list.heroes.length}
+                      rating={roundedAverageRating}
+                    />
+                  </div>
+                );
+              })}
             </div>
           </TabsContent>
         </Tabs>

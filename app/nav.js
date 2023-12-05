@@ -9,7 +9,7 @@ import { useSession } from "next-auth/react";
 
 export default async function Nav() {
   const session = await getServerSession(authOptions);
-  console.log(session?.session.user);
+
   return (
     <nav className="flex justify-between items-center my-8 ">
       <Link href="/">
@@ -22,7 +22,7 @@ export default async function Nav() {
         {!session?.session.user && <LogIn variant={"ghost"} />}
         {session?.session.user && (
           <div>
-            <SignedIn name={session?.session.user.name} />
+            <SignedIn user={session?.token} />
           </div>
         )}
       </ul>

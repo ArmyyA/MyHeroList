@@ -210,7 +210,7 @@ export default function EditList({
                   </div>
                   <div className="flex items-center mt-7 justify-between">
                     <Button className="" type="submit">
-                      Create
+                      Edit
                     </Button>
                     <div className="flex items-center gap-3">
                       <Label className="font-medium">Public</Label>

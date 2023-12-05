@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useToast } from "@/components/ui/use-toast";
 import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 import Image from "next/image";
+import { useSession } from "next-auth/react";
 
 import {
   DropdownMenu,
@@ -16,8 +17,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export default function SignedIn({ name }) {
+export default function SignedIn({ user }) {
   const { toast } = useToast();
+  console.log("From signed");
+  console.log(user);
+  const isAdmin = user?.role;
   return (
     <div>
       <div className="p-2">
@@ -32,8 +36,16 @@ export default function SignedIn({ name }) {
             />
           </DropdownMenuTrigger>
           <DropdownMenuContent className="mt-2">
-            <DropdownMenuLabel>{name}</DropdownMenuLabel>
+            <DropdownMenuLabel>{user?.name}</DropdownMenuLabel>
             <DropdownMenuSeparator />
+            {isAdmin == "admin" && (
+              <Link href="/admin">
+                <DropdownMenuItem className="cursor-pointer">
+                  Admin
+                </DropdownMenuItem>
+              </Link>
+            )}
+
             <Link href="/dashboard">
               <DropdownMenuItem className="cursor-pointer">
                 Dashboard

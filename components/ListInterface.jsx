@@ -49,7 +49,7 @@ export default function ListInterface() {
       body: JSON.stringify({
         listname: name,
         description: description,
-        rating: "null",
+        review: [{ rating: 5, comments: null }],
         heroes: heroesArray,
         public: vis,
       }),
