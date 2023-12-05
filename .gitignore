@@ -34,3 +34,4 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+server/myherolist-79db9-firebase-adminsdk-f1d7h-14429787c5.json

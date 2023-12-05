@@ -56,7 +56,7 @@ export const authOptions = {
         token.name = user.displayName;
 
         const customToken = jwt.sign(
-          { uid: user.uid, email: user.email },
+          { uid: user.uid, email: user.email, role: token.role },
           process.env.JWT_SECRET,
           { expiresIn: "1h" }
         );

@@ -16,6 +16,15 @@ const handle = server.getRequestHandler();
 const { MongoClient } = require("mongodb");
 const { info } = require("autoprefixer");
 
+const admin = require("firebase-admin");
+const serviceAccount = require("./myherolist-79db9-firebase-adminsdk-f1d7h-14429787c5.json"); // Your Firebase service account key
+
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+  });
+}
+
 const uri =
   "mongodb+srv://admin:hello234@cluster0.qhj8gpn.mongodb.net/?retryWrites=true&w=majority";
 const client = new MongoClient(uri);
@@ -387,6 +396,22 @@ server
       } catch (err) {
         console.log(err.message);
         res.status(500).send("Error");
+      }
+    });
+
+    app.get("/api/users", authenticate, async (req, res) => {
+      console.log("Hey");
+      console.log(req.user);
+      try {
+        if (req.user.role !== "admin") {
+          return res.status(403).json({ message: "Access denied" });
+        }
+
+        const users = await userdb.find({}).toArray();
+        res.status(200).json(users);
+      } catch (err) {
+        console.error(err);
+        res.status(500).send("Error retrieving users");
       }
     });
 
