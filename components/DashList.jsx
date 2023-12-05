@@ -23,6 +23,8 @@ async function getLists(accessToken) {
 export default async function DashList({ token }) {
   const lists = await getLists(token);
   console.log(lists.heroes);
+  console.log("Reached");
+  console.log(lists[0].public);
   return (
     <div className="flex flex-wrap justify-center gap-11 py-6 mt-10">
       {lists.map((list, index) => (
@@ -33,6 +35,7 @@ export default async function DashList({ token }) {
             heroNum={list.heroes.length}
             rating={list.rating}
             edit={true}
+            visibility={list.public}
           />
         </div>
       ))}

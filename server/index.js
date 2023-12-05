@@ -609,13 +609,27 @@ server
         let setOps = {};
         let addToSetOps = {};
 
-        if (newListname !== undefined) setOps["lists.$.name"] = newListname;
-        if (description !== undefined)
+        if (newListname !== undefined && newListname !== "")
+          setOps["lists.$.name"] = newListname;
+        if (description !== undefined && description !== "")
           setOps["lists.$.description"] = description;
-        if (public !== undefined) setOps["lists.$.public"] = public;
+        if (public !== undefined && public !== "")
+          setOps["lists.$.public"] = public;
 
         if (heroAdds && heroAdds.length) {
           addToSetOps["lists.$.heroes"] = { $each: heroAdds };
+        }
+
+        console.log("Below SHOULD BE REMOVAL");
+        console.log(heroRemoves);
+        if (heroRemoves && heroRemoves.length) {
+          await userdb.updateOne(
+            { email: email, "lists.name": oldListname },
+            {
+              $pullAll: { "lists.$.heroes": heroRemoves },
+              $currentDate: { "lists.$.lastModified": true },
+            }
+          );
         }
 
         // Update the list with new fields and add heroes
@@ -630,18 +644,34 @@ server
           }
         );
 
-        // If there are heroes to remove
-        if (heroRemoves && heroRemoves.length) {
-          await userdb.updateOne(
-            { email: email, "lists.name": oldListname },
-            {
-              $pullAll: { "lists.$.heroes": heroRemoves },
-              $currentDate: { "lists.$.lastModified": true },
-            }
-          );
+        res.status(200).json({ message: "List updated successfully" });
+      } catch (err) {
+        res.status(500).json({ message: err.message });
+      }
+    });
+
+    app.delete("/api/lists/:listname", authenticate, async (req, res) => {
+      const listname = req.params.listname;
+
+      try {
+        // Find the document that contains the list to be deleted
+        const existingList = await userdb.findOne({ "lists.name": listname });
+
+        if (!existingList) {
+          return res.status(404).json({ message: "List not found" });
         }
 
-        res.status(200).json({ message: "List updated successfully" });
+        // Remove the list from the document
+        const result = await userdb.updateOne(
+          { _id: existingList._id },
+          { $pull: { lists: { name: listname } } }
+        );
+
+        if (result.modifiedCount === 0) {
+          return res.status(400).json({ message: "List could not be deleted" });
+        }
+
+        res.status(200).json({ message: "List deleted successfully" });
       } catch (err) {
         res.status(500).json({ message: err.message });
       }

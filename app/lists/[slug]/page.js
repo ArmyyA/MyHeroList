@@ -9,11 +9,7 @@ import { useEffect } from "react";
 
 async function getList(name) {
   console.log("Reached");
-  const listRes = await fetch(`/api/lists/${name}`, {
-    headers: {
-      "Cache-Control": "no-cache",
-    },
-  });
+  const listRes = await fetch(`/api/lists/${name}`);
   const list = await listRes.json();
   console.log(list);
   return list;

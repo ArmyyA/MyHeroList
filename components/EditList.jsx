@@ -22,43 +22,89 @@ import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Switch } from "./ui/switch";
 import { useRouter } from "next/navigation";
+import { getSession } from "next-auth/react";
 
-export default function EditList({ listname, username, rating, heroNum }) {
+export default function EditList({
+  listname,
+  username,
+  rating,
+  heroNum,
+  visibility,
+}) {
   const router = useRouter();
   const { toast } = useToast();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [heroes, setHeroes] = useState("");
+  const [heroesAdd, setHeroesAdd] = useState("");
+  const [heroesRem, setHeroesRem] = useState("");
   const [vis, setVis] = useState(false);
+
+  const handleDelete = async (e) => {
+    e.preventDefault();
+
+    const session = await getSession();
+    const token = session?.token.accessToken;
+
+    const res = await fetch(`/api/lists/${listname}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (res.ok) {
+      await toast({
+        title: "Successfully deleted the list!",
+      });
+      router.refresh();
+      console.log("Success");
+    } else {
+      console.log(res);
+      await toast({
+        title: "Uh-oh!",
+        description: "Something went wrong. Please try again!",
+      });
+    }
+  };
+
   const handleEdit = async (e) => {
     e.preventDefault();
 
     console.log("Reached");
+    console.log(heroesRem);
 
     const session = await getSession();
     const token = session?.token.accessToken;
     console.log(token);
-    const heroesArray = heroes.split(",").map((hero) => parseInt(hero.trim()));
+    const heroesAddArray =
+      heroesAdd.trim().length === 0
+        ? []
+        : heroesAdd.split(",").map((hero) => parseInt(hero.trim()));
 
-    console.log(heroes);
-    const res = await fetch("/api/lists/create", {
-      method: "POST",
+    const heroesRemArray =
+      heroesRem.trim().length === 0
+        ? []
+        : heroesRem.split(",").map((hero) => parseInt(hero.trim()));
+
+    const res = await fetch(`/api/lists/${listname}/update`, {
+      method: "PUT",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
-        listname: name,
+        newListname: name,
         description: description,
-        rating: "null",
-        heroes: heroesArray,
+        heroAdds: heroesAddArray,
+        heroRemoves: heroesRemArray,
         public: vis,
       }),
       credentials: "include",
     });
     if (res.ok) {
       await toast({
-        title: "Successfully created the list!",
+        title: "Successfully updated the list!",
       });
       router.refresh();
       console.log("Success");
@@ -81,10 +127,13 @@ export default function EditList({ listname, username, rating, heroNum }) {
           </div>
           <div>
             <CardDescription>
-              There are {heroNum} heroes in the list
+              There are <strong>{heroNum}</strong> heroes in the list
             </CardDescription>
             <CardDescription>
-              <strong>Average Rating: {rating}</strong>
+              Average Rating: <strong>{rating}</strong>
+            </CardDescription>
+            <CardDescription>
+              Public: <strong>{visibility.toString()}</strong>
             </CardDescription>
           </div>
         </div>
@@ -132,7 +181,7 @@ export default function EditList({ listname, username, rating, heroNum }) {
                     </div>
                     <div className="">
                       <div>
-                        <Label className="text-right">Hero IDs</Label>
+                        <Label className="text-right">Hero IDs to Add</Label>
                       </div>
                       <Input
                         id="heroes"
@@ -140,8 +189,21 @@ export default function EditList({ listname, username, rating, heroNum }) {
                         defaultValue=""
                         className=""
                         onChange={(e) => {
-                          setHeroes(e.target.value);
-                          console.log(heroes);
+                          setHeroesAdd(e.target.value);
+                        }}
+                      />
+                    </div>
+                    <div className="">
+                      <div>
+                        <Label className="text-right">Hero IDs to Remove</Label>
+                      </div>
+                      <Input
+                        id="heroes"
+                        placeholder="0, 1, 2..."
+                        defaultValue=""
+                        className=""
+                        onChange={(e) => {
+                          setHeroesRem(e.target.value);
                         }}
                       />
                     </div>
@@ -178,7 +240,11 @@ export default function EditList({ listname, username, rating, heroNum }) {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="w-full">
-                  <Button className="w-full" variant="destructive">
+                  <Button
+                    onClick={handleDelete}
+                    className="w-full"
+                    variant="destructive"
+                  >
                     Yes
                   </Button>
                 </div>
