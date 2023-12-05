@@ -81,7 +81,7 @@ export default function Page({ params }) {
           Reviews
         </h1>
         <div className="flex justify-center text-center items-center">
-          <ScrollArea className="h-[200px] w-2/5 rounded-md border p-4 mt-8">
+          <ScrollArea className="h-[400px] w-2/5 rounded-md border p-4 mt-4">
             {listinfo?.review.map((review, index) => (
               <Card key={index} className="w-full shadow-sm mb-4">
                 <CardHeader>

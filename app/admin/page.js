@@ -26,6 +26,7 @@ async function getUsers(accessToken) {
 export default async function Admin() {
   const session = await getServerSession(authOptions);
   const users = await getUsers(session?.token.accessToken);
+  const adminUser = session?.token.name;
   console.log(session?.token);
   console.log(users);
 
@@ -39,7 +40,7 @@ export default async function Admin() {
       <div className="mt-10">
         {users?.map((user, index) => (
           <div className="mb-4" key={index}>
-            <UserCard user={user} />
+            <UserCard user={user} token={session?.token.accessToken} />
           </div>
         ))}
       </div>

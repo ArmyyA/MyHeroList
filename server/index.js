@@ -415,6 +415,82 @@ server
       }
     });
 
+    app.put("/api/users/disable", authenticate, async (req, res) => {
+      console.log("Hey");
+      console.log(req.user);
+      try {
+        if (req.user.role !== "admin") {
+          return res.status(403).json({ message: "Access denied" });
+        }
+
+        const { userEmail } = req.body;
+        console.log("Reached");
+        const user = await userdb.findOne({ email: userEmail });
+        const firebaseRecord = await admin.auth().getUserByEmail(userEmail);
+        const uid = firebaseRecord.uid;
+        console.log(user);
+
+        if (user.disabled === false) {
+          await admin.auth().updateUser(uid, { disabled: true });
+          // Update the 'disabled' field in the MongoDB document
+          const result = await userdb.updateOne(
+            { email: userEmail },
+            { $set: { disabled: true } }
+          );
+
+          if (result.modifiedCount === 0) {
+            return res
+              .status(404)
+              .json({ message: "User not found in MongoDB" });
+          }
+        } else if (user.disabled === true) {
+          await admin.auth().updateUser(uid, { disabled: false });
+          // Update the 'disabled' field in the MongoDB document
+          const result = await userdb.updateOne(
+            { email: userEmail },
+            { $set: { disabled: false } }
+          );
+
+          if (result.modifiedCount === 0) {
+            return res
+              .status(404)
+              .json({ message: "User not found in MongoDB" });
+          }
+        }
+
+        res.status(200).json({ message: "Success!" });
+      } catch (err) {
+        console.error(err);
+        res.status(500).send("Error disabling user");
+      }
+    });
+
+    app.put("/api/users/admin", authenticate, async (req, res) => {
+      console.log("Hey");
+      console.log(req.user);
+      try {
+        if (req.user.role !== "admin") {
+          return res.status(403).json({ message: "Access denied" });
+        }
+
+        const { userEmail } = req.body;
+        console.log("Reached");
+        const user = await userdb.findOne({ email: userEmail });
+
+        console.log(user);
+
+        const result = await userdb.updateOne(
+          { email: userEmail },
+          { $set: { role: "admin" } }
+        );
+
+        res.status(200).json({ message: "Success!" });
+      } catch (err) {
+        console.error(err);
+        res.status(500).send("Error disabling user");
+      }
+    });
+
     app.post("/api/user/register", async (req, res) => {
       try {
         const { email, username } = req.body;
@@ -430,6 +506,7 @@ server
           username: username,
           lists: [],
           role: "regular",
+          disabled: false,
         };
         await userdb.insertOne(newUser);
 
