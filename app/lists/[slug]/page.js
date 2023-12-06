@@ -19,6 +19,8 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useSession } from "next-auth/react";
+import { useToast } from "@/components/ui/use-toast";
+import { useRouter } from "next/navigation";
 
 async function getList(name) {
   console.log("Reached");
@@ -49,6 +51,43 @@ export default function Page({ params }) {
   const [heroes, setHeroes] = useState([]);
   const { data: session, status } = useSession();
   const user = session?.session.user;
+  const token = session?.token.accessToken;
+  const role = session?.token.role;
+  const { toast } = useToast();
+  const router = useRouter();
+
+  const hideReview = async (index) => {
+    const listName = listinfo.name;
+    const reviewIndex = parseInt(index);
+
+    const res = await fetch(`/api/lists/${listName}/review/hide`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        reviewIndex: reviewIndex,
+      }),
+      credentials: "include",
+    });
+
+    console.log(res);
+
+    if (res.ok) {
+      await toast({
+        title: "Successful!",
+      });
+
+      router.refresh();
+      console.log("Success");
+    } else {
+      await toast({
+        title: "Uh-oh!",
+        description: "Something went wrong. Please try again!",
+      });
+    }
+  };
 
   // Function to refresh data
   const refreshData = async () => {
@@ -82,16 +121,37 @@ export default function Page({ params }) {
         </h1>
         <div className="flex justify-center text-center items-center">
           <ScrollArea className="h-[400px] w-2/5 rounded-md border p-4 mt-4">
-            {listinfo?.review.map((review, index) => (
-              <Card key={index} className="w-full shadow-sm mb-4">
-                <CardHeader>
-                  <CardTitle>{review.rating}/5</CardTitle>
-                  <CardDescription className="mt-3">
-                    {review.comment ? review.comment : "No comment"}
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            ))}
+            {role === "admin" &&
+              listinfo?.review.map((review, index) => (
+                <Card key={index} className="w-full shadow-sm mb-4">
+                  <CardHeader>
+                    <CardTitle>{review.rating}/5</CardTitle>
+                    <CardDescription className="mt-3">
+                      {review.comment ? review.comment : "No comment"}
+                    </CardDescription>
+                  </CardHeader>
+                  <Button
+                    variant="outline"
+                    className="mb-5"
+                    onClick={() => hideReview(index)}
+                  >
+                    {review.hidden ? "Unhide" : "Hide"}
+                  </Button>
+                </Card>
+              ))}
+            {role !== "admin" &&
+              listinfo?.review
+                .filter((review) => !review.hidden)
+                .map((review, index) => (
+                  <Card key={index} className="w-full shadow-sm mb-4">
+                    <CardHeader>
+                      <CardTitle>{review.rating}/5</CardTitle>
+                      <CardDescription className="mt-3">
+                        {review.comment ? review.comment : "No comment"}
+                      </CardDescription>
+                    </CardHeader>
+                  </Card>
+                ))}
           </ScrollArea>
         </div>
         <div className="flex justify-center mt-5">

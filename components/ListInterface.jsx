@@ -49,7 +49,7 @@ export default function ListInterface() {
       body: JSON.stringify({
         listname: name,
         description: description,
-        review: [{ rating: 5, comments: null }],
+        review: [{ rating: 5, comments: null, hidden: false }],
         heroes: heroesArray,
         public: vis,
       }),
@@ -60,6 +60,7 @@ export default function ListInterface() {
         title: "Successfully created the list!",
       });
       router.refresh();
+      router.push(`/lists/${name}`);
       console.log("Success");
     } else {
       await toast({

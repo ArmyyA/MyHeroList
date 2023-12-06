@@ -752,9 +752,33 @@ server
       }
     });
 
+    app.delete("/api/lists/:listname", authenticate, async (req, res) => {
+      const listname = req.params.listname;
+
+      try {
+        // Find the document that contains the list to be deleted
+        const existingList = await userdb.findOne({ "lists.name": listname });
+        if (!existingList) {
+          return res.status(404).json({ message: "List not found" });
+        }
+
+        // Remove the list from the document
+        const result = await userdb.updateOne(
+          { _id: existingList._id },
+          { $pull: { lists: { name: listname } } }
+        );
+        if (result.modifiedCount === 0) {
+          return res.status(400).json({ message: "List could not be deleted" });
+        }
+        res.status(200).json({ message: "List deleted successfully" });
+      } catch (err) {
+        res.status(500).json({ message: err.message });
+      }
+    });
+
     app.post("/api/lists/:listname/review", authenticate, async (req, res) => {
       const listname = req.params.listname;
-      const { rating, comment } = req.body;
+      const { rating, comment, hidden } = req.body;
 
       // Validate the input
       if (
@@ -770,7 +794,7 @@ server
       }
 
       try {
-        const review = { rating, comment }; // Construct the review object
+        const review = { rating, comment, hidden }; // Construct the review object
 
         // Push the new review object into the review array of the specified list
         const result = await userdb.updateOne(
@@ -789,6 +813,93 @@ server
         res.status(500).json({ message: err.message });
       }
     });
+
+    app.put("/api/lists/:listname/review", authenticate, async (req, res) => {
+      const listname = req.params.listname;
+      const { rating, comment, hidden } = req.body;
+
+      // Validate the input
+      if (
+        typeof rating !== "number" ||
+        rating < 0 ||
+        rating > 5 ||
+        typeof comment !== "string"
+      ) {
+        return res.status(400).json({
+          message:
+            "Rating must be a number between 0 and 5 and a valid comment is required.",
+        });
+      }
+
+      try {
+        const review = { rating, comment, hidden }; // Construct the review object
+
+        // Push the new review object into the review array of the specified list
+        const result = await userdb.updateOne(
+          { "lists.name": listname },
+          { $push: { "lists.$.review": review } }
+        );
+
+        if (result.modifiedCount === 0) {
+          return res
+            .status(404)
+            .json({ message: "List not found or no update required" });
+        }
+
+        res.status(200).json({ message: "Review added successfully" });
+      } catch (err) {
+        res.status(500).json({ message: err.message });
+      }
+    });
+
+    app.put(
+      "/api/lists/:listname/review/hide",
+      authenticate,
+      async (req, res) => {
+        try {
+          if (req.user.role !== "admin") {
+            return res.status(403).json({ message: "Access denied" });
+          }
+
+          const listName = req.params.listname;
+          const { reviewIndex } = req.body;
+
+          // Fetch the entire document
+
+          const userDocument = await userdb.findOne({ "lists.name": listName });
+          //console.log(userDocument);
+          if (!userDocument) {
+            return res.status(404).json({ message: "List not found" });
+          }
+
+          // Find the desired list and review
+          const list = userDocument.lists.find((l) => l.name === listName);
+          //console.log(list);
+          if (!list || !list.review || list.review.length <= reviewIndex) {
+            return res.status(404).json({ message: "Review not found" });
+          }
+          console.log(list.review[0].hidden);
+          // Toggle the hidden field
+          list.review[reviewIndex].hidden = !list.review[reviewIndex].hidden;
+
+          console.log("HERERERE");
+          console.log(list.review[reviewIndex]);
+
+          // Update the document in MongoDB
+          await userdb.updateOne(
+            { _id: userDocument._id },
+            { $set: { lists: userDocument.lists } }
+          );
+
+          res
+            .status(200)
+            .json({ message: "Review hidden status toggled successfully" });
+        } catch (err) {
+          console.error("Error toggling hidden status:", err.message);
+          res.status(500).send("Error toggling hidden status");
+        }
+      }
+    );
 
     // Post a new list with the provided name, if possible
     app.post(
@@ -907,6 +1018,7 @@ server
       validateRequest(listnameSchema),
       async (req, res) => {
         try {
+          console.log("Reached!");
           const listname = req.params.listname;
 
           const list = await userdb.findOne({ name: listname });

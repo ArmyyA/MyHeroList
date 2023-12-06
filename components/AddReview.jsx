@@ -56,6 +56,7 @@ export default function AddReview({ listname }) {
       body: JSON.stringify({
         rating: ratingInt,
         comment: comment,
+        hidden: false,
       }),
       credentials: "include",
     });
@@ -63,6 +64,7 @@ export default function AddReview({ listname }) {
       await toast({
         title: "Successfully added the review!",
       });
+      router.push(`/lists/${listname}`);
       router.refresh();
       console.log("Success");
     } else {
