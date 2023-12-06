@@ -34,6 +34,7 @@ const database = client.db("Heroes");
 const infodb = database.collection("info");
 const powersdb = database.collection("powers");
 const userdb = database.collection("user");
+const policydb = database.collection("policies");
 const jwt = require("jsonwebtoken");
 
 // Define the Joi schema for search pattern input validation
@@ -151,6 +152,16 @@ server
     const app = express();
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded({ extended: true }));
+
+    app.get("/api/policy", async (req, res) => {
+      try {
+        const policy = await policydb.findOne({});
+        console.log(policy.policy);
+        res.json(policy.policy);
+      } catch (err) {
+        res.status(500).send("Error fetching policy");
+      }
+    });
 
     app.get("/api/heroes/search", async (req, res) => {
       try {

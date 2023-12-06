@@ -16,20 +16,20 @@ import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import LogIn from "@/components/LogIn";
 
-import { useRouter } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase";
 import { sendEmailVerification } from "firebase/auth";
 import { updateProfile } from "firebase/auth";
+import { useSession } from "next-auth/react";
 
 export default function Auth() {
   const [email, setEmail] = useState("");
   const [username, setUser] = useState("");
   const [password, setPassword] = useState("");
-
+  const { data: session, status } = useSession();
   const { toast } = useToast();
-
   const router = useRouter();
 
   const handleSubmit = async (e) => {

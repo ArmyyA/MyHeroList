@@ -19,6 +19,9 @@ export default async function Nav() {
         </h3>
       </Link>
       <ul className="flex items-center gap-6">
+        <Button variant="link" className="py-2">
+          <Link href={"/policies"}>Copyright Policies</Link>
+        </Button>
         {!session?.session.user && <LogIn variant={"ghost"} />}
         {session?.session.user && (
           <div>

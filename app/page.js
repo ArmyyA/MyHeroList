@@ -46,9 +46,16 @@ export default async function Home() {
             <Link href="/explore">
               <Button>Get Searching</Button>
             </Link>
-            <Link href="/auth">
-              <Button variant="outline">Create Account</Button>
-            </Link>
+            {session?.token && (
+              <Link href="/dashboard">
+                <Button variant="outline">View Dashboard</Button>
+              </Link>
+            )}
+            {!session?.token && (
+              <Link href="/auth">
+                <Button variant="outline">Create Account</Button>
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -59,7 +66,7 @@ export default async function Home() {
           </h1>
         </div>
 
-        <div className="flex justify-center gap-11 py-6">
+        <div className="flex flex-wrap justify-center gap-11 py-6">
           {heroes.map((hero) => (
             <HeroCard
               id={hero.id}
