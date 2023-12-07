@@ -6,6 +6,8 @@ const bcrypt = require("bcrypt");
 const stringSimilarity = require("string-similarity");
 const { getServerSession, getSession } = require("next-auth/react");
 const { getToken } = require("next-auth/jwt");
+require("dotenv").config({ path: ".env.local" });
+const { sendEmailVerification } = require("firebase/auth");
 
 const auth = require("next-auth");
 
@@ -25,8 +27,8 @@ if (!admin.apps.length) {
   });
 }
 
-const uri =
-  "mongodb+srv://admin:hello234@cluster0.qhj8gpn.mongodb.net/?retryWrites=true&w=majority";
+const uri = process.env.MONGODB_URI;
+
 const client = new MongoClient(uri);
 console.log("Connected to MongoDB");
 
@@ -47,6 +49,7 @@ const searchSchema = Joi.object({
   n: Joi.number().integer().min(0).allow("", null).optional(),
 });
 
+// Middleware to authenticate users based on JWT token
 async function authenticate(req, res, next) {
   try {
     const authHeader = req.headers.authorization || "";
@@ -153,6 +156,7 @@ server
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded({ extended: true }));
 
+    // Fetches the policies for the website from MongoDB
     app.get("/api/policy", async (req, res) => {
       try {
         const policy = await policydb.findOne({});
@@ -163,6 +167,20 @@ server
       }
     });
 
+    app.post("/api/resendVerificationEmail", async (req, res) => {
+      const { email } = req.body;
+
+      try {
+        const user = await admin.auth().getUserByEmail(email);
+        await sendEmailVerification(user);
+        res.status(200).send("Verification email resent successfully.");
+      } catch (error) {
+        console.error("Error resending verification email:", error);
+        res.status(500).send("Error resending verification email.");
+      }
+    });
+
+    // Searches heroes based on combination of Power, Name, Publisher, and Race
     app.get("/api/heroes/search", async (req, res) => {
       try {
         let heroes = await infodb.find({}).toArray();
@@ -192,8 +210,8 @@ server
                 stringSimilarity.compareTwoStrings(
                   searchString,
                   beginningOfField
-                ) > 0.5
-              ); // Adjust threshold as needed
+                ) > 0.47
+              );
             });
           }
         });
@@ -286,7 +304,7 @@ server
       }
     );
 
-    // Gets hero information based on provided hero id
+    // Gets hero information based on provided hero id, incluing hero images
     app.get("/api/heroes/:id", validateRequest(idSchema), async (req, res) => {
       const id = parseInt(req.params.id);
 
@@ -361,37 +379,7 @@ server
       }
     );
 
-    // Retrieves all possible publishers
-    app.get("/api/publishers", async (req, res) => {
-      try {
-        const aggregationPipeline = [
-          {
-            $match: {
-              Publisher: { $exists: true, $ne: "" },
-            },
-          },
-          {
-            $group: {
-              _id: "$Publisher",
-            },
-          },
-          {
-            $sort: {
-              _id: 1,
-            },
-          },
-        ];
-
-        const result = await infodb.aggregate(aggregationPipeline).toArray();
-        const publishers = result.map((doc) => doc._id);
-
-        console.log(publishers);
-        return res.json(publishers);
-      } catch (err) {
-        res.status(500).json({ message: err.message });
-      }
-    });
-
+    // Checks if a user with the email already exists
     app.get("/api/user", async (req, res) => {
       try {
         const { email } = req.body;
@@ -410,6 +398,7 @@ server
       }
     });
 
+    // Retrieves all users on the platform
     app.get("/api/users", authenticate, async (req, res) => {
       console.log("Hey");
       console.log(req.user);
@@ -426,6 +415,7 @@ server
       }
     });
 
+    // Endpoint to disable users
     app.put("/api/users/disable", authenticate, async (req, res) => {
       console.log("Hey");
       console.log(req.user);
@@ -476,6 +466,7 @@ server
       }
     });
 
+    // Endpoint to give users admin privelages
     app.put("/api/users/admin", authenticate, async (req, res) => {
       console.log("Hey");
       console.log(req.user);
@@ -498,10 +489,11 @@ server
         res.status(200).json({ message: "Success!" });
       } catch (err) {
         console.error(err);
-        res.status(500).send("Error disabling user");
+        res.status(500).send("Error giving user admin");
       }
     });
 
+    // Registers a valid user to MongoDB
     app.post("/api/user/register", async (req, res) => {
       try {
         const { email, username } = req.body;
@@ -528,25 +520,8 @@ server
       }
     });
 
-    // Retrieves all the lists
-    app.get("/api/mylists", async (req, res) => {
-      try {
-        // Query the userdb collection and project only the 'name' field
-        const cursor = userdb.find({}).project({ name: 1, _id: 0 });
-        const lists = await cursor.toArray();
-
-        if (lists.length === 0) {
-          return res.status(400).json({ message: "No Lists Found" });
-        } else {
-          // Extract just the names from the documents
-          const listNames = lists.map((list) => list.name);
-          return res.json(listNames);
-        }
-      } catch (err) {
-        res.status(500).json({ message: err.message });
-      }
-    });
-
+    // All recent lists sorted by last modified, and that are public
+    // This shows upto 10 lists, for unauthenticated users
     app.get("/api/lists/recent", async (req, res) => {
       try {
         // Aggregate the lists from all documents, sort them by lastModified, and limit to 10
@@ -572,6 +547,7 @@ server
       }
     });
 
+    // Gives lists that are created by the session's user only
     app.get("/api/lists/auth/mylists", authenticate, async (req, res) => {
       const email = req.user.email;
       console.log(email);
@@ -597,9 +573,11 @@ server
       }
     });
 
+    // All recent lists sorted by last modified, and that are public
+    // This shows upto 20 lists, for authenticated users
     app.get("/api/lists/auth/recent", authenticate, async (req, res) => {
       try {
-        // Aggregate the lists from all documents, sort them by lastModified, and limit to 10
+        // Aggregate the lists from all documents, sort them by lastModified, and limit to 20
         const recentLists = await userdb
           .aggregate([
             { $unwind: "$lists" }, // Deconstructs the lists array
@@ -656,6 +634,17 @@ server
 
       try {
         const userEmail = req.user.email;
+
+        // Retrieve the user's data from the database
+        const userData = await userdb.findOne({ email: userEmail });
+
+        // Check if the user already has 20 or more lists
+        if (userData.lists && userData.lists.length >= 20) {
+          return res
+            .status(400)
+            .json({ error: "You cannot create more than 20 lists." });
+        }
+
         // Check if a list with the same name already exists
         const existingList = await userdb.findOne({ "lists.name": listname });
 
@@ -718,43 +707,35 @@ server
           return res.status(404).json({ message: "List not found" });
         }
 
-        // Prepare the update objects
-        let setOps = {};
-        let addToSetOps = {};
-
-        if (newListname !== undefined && newListname !== "")
-          setOps["lists.$.name"] = newListname;
-        if (description !== undefined && description !== "")
-          setOps["lists.$.description"] = description;
-        if (public !== undefined && public !== "")
-          setOps["lists.$.public"] = public;
-
-        if (heroAdds && heroAdds.length) {
-          addToSetOps["lists.$.heroes"] = { $each: heroAdds };
-        }
-
-        console.log("Below SHOULD BE REMOVAL");
-        console.log(heroRemoves);
-        if (heroRemoves && heroRemoves.length) {
-          await userdb.updateOne(
-            { email: email, "lists.name": oldListname },
-            {
-              $pullAll: { "lists.$.heroes": heroRemoves },
-              $currentDate: { "lists.$.lastModified": true },
+        // Modify the lists array as needed
+        userDocument.lists = userDocument.lists.map((list) => {
+          if (list.name === oldListname) {
+            // Remove heroes if needed
+            if (heroRemoves && heroRemoves.length) {
+              list.heroes = list.heroes.filter(
+                (heroId) => !heroRemoves.includes(heroId)
+              );
             }
-          );
-        }
 
-        // Update the list with new fields and add heroes
-        await userdb.updateOne(
-          { email: email, "lists.name": oldListname },
-          {
-            ...(Object.keys(setOps).length > 0 && { $set: setOps }),
-            ...(Object.keys(addToSetOps).length > 0 && {
-              $addToSet: addToSetOps,
-            }),
-            $currentDate: { "lists.$.lastModified": true },
+            // Apply other updates
+            if (newListname) list.name = newListname;
+            if (description !== undefined) list.description = description;
+            if (public !== undefined) list.public = public;
+            list.lastModified = new Date();
+
+            // Add heroes if needed
+            if (heroAdds && heroAdds.length) {
+              list.heroes = [...new Set([...list.heroes, ...heroAdds])]; // This adds heroes without duplication
+              list.lastModified = new Date();
+            }
           }
+          return list;
+        });
+
+        // Perform a single update operation
+        await userdb.updateOne(
+          { email: email },
+          { $set: { lists: userDocument.lists } }
         );
 
         res.status(200).json({ message: "List updated successfully" });
@@ -782,44 +763,6 @@ server
           return res.status(400).json({ message: "List could not be deleted" });
         }
         res.status(200).json({ message: "List deleted successfully" });
-      } catch (err) {
-        res.status(500).json({ message: err.message });
-      }
-    });
-
-    app.post("/api/lists/:listname/review", authenticate, async (req, res) => {
-      const listname = req.params.listname;
-      const { rating, comment, hidden } = req.body;
-
-      // Validate the input
-      if (
-        typeof rating !== "number" ||
-        rating < 0 ||
-        rating > 5 ||
-        typeof comment !== "string"
-      ) {
-        return res.status(400).json({
-          message:
-            "Rating must be a number between 0 and 5 and a valid comment is required.",
-        });
-      }
-
-      try {
-        const review = { rating, comment, hidden }; // Construct the review object
-
-        // Push the new review object into the review array of the specified list
-        const result = await userdb.updateOne(
-          { "lists.name": listname },
-          { $push: { "lists.$.review": review } }
-        );
-
-        if (result.modifiedCount === 0) {
-          return res
-            .status(404)
-            .json({ message: "List not found or no update required" });
-        }
-
-        res.status(200).json({ message: "Review added successfully" });
       } catch (err) {
         res.status(500).json({ message: err.message });
       }
@@ -912,197 +855,6 @@ server
       }
     );
 
-    // Post a new list with the provided name, if possible
-    app.post(
-      "/api/mylists",
-      validateRequest(listnameSchema),
-      async (req, res) => {
-        const { listname } = req.body;
-        const { description } = req.body;
-        const { rating } = req.body;
-
-        if (!listname || listname === "") {
-          return res.status(400).json({ error: "No name was provided!" });
-        }
-
-        try {
-          const userEmail = req.user.email;
-          // Check if a list with the same name already exists
-          const existingList = await userdb.findOne({ "lists.name": listname });
-
-          if (existingList) {
-            return res
-              .status(400)
-              .json({ message: "A list with the name already exists!" });
-          }
-
-          await userdb.updateOne(
-            { email: userEmail },
-            {
-              $push: {
-                lists: {
-                  name: listname,
-                  heroes: [],
-                  description: description,
-                  rating: rating,
-                },
-              },
-            }
-          );
-
-          return res
-            .status(200)
-            .json({ message: "List was created successfully" });
-        } catch (err) {
-          res.status(500).json({ message: err.message });
-        }
-      }
-    );
-
-    // Put new heroes list within a given listname
-    app.put(
-      "/api/mylists/:listname",
-      validateAddToList(addHeroSchema, listnameSchema),
-      async (req, res) => {
-        const listname = req.params.listname;
-        const heroids = req.body.heroes;
-
-        if (!Array.isArray(heroids)) {
-          return res
-            .status(400)
-            .json({ message: "Provided body list is not valid!" });
-        }
-
-        try {
-          const list = await userdb.findOne({ name: listname });
-
-          // If the list does not exist return 404
-          if (!list) {
-            return res.status(404).json({ message: "List not found." });
-          }
-
-          const heroesCount = await infodb.countDocuments({
-            id: { $in: heroids },
-          });
-          if (heroesCount !== heroids.length) {
-            return res
-              .status(400)
-              .json({ message: "One or more hero IDs do not exist." });
-          }
-
-          // Update the list with new hero IDs
-          await userdb.updateOne(
-            { name: listname },
-            { $set: { heroes: heroids } }
-          );
-
-          return res
-            .status(200)
-            .json({ message: "Superhero list was updated successfully!" });
-        } catch (err) {
-          res.status(500).json({ message: err.message });
-        }
-      }
-    );
-
-    // Get contents of the list given listname
-    app.get(
-      "/api/mylists/:listname",
-      validateRequest(listnameSchema),
-      async (req, res) => {
-        const listname = req.params.listname;
-
-        const list = await userdb.findOne({ name: listname });
-
-        // If the list does not exist return 404
-        if (!list) {
-          return res.status(404).json({ message: "List not found." });
-        }
-
-        return res.json(list.heroes);
-      }
-    );
-
-    // Delete a list given listname
-    app.delete(
-      "/api/mylists/:listname",
-      validateRequest(listnameSchema),
-      async (req, res) => {
-        try {
-          console.log("Reached!");
-          const listname = req.params.listname;
-
-          const list = await userdb.findOne({ name: listname });
-
-          // If the list does not exist return 404
-          if (!list) {
-            return res.status(404).json({ message: "List not found." });
-          }
-
-          await userdb.deleteOne({ name: listname });
-
-          res.status(200).json({ message: "List deleted successfully!" });
-        } catch (err) {
-          res.status(500).json({ message: err.message });
-        }
-      }
-    );
-
-    // Retrieves all heroes and their content given a list name
-    app.get("/api/mylists/:listName/heroes", async (req, res) => {
-      const { listName } = req.params;
-
-      try {
-        // Find the list with the given name
-        const list = await userdb.findOne({ name: listName });
-
-        // If the list doesn't exist, return an error
-        if (!list) {
-          return res.status(404).json({ message: "List not found" });
-        }
-
-        // Retrieve details for each superhero in the list
-        const heroesDetails = await Promise.all(
-          list.heroes.map(async (id) => {
-            const hero = await infodb.findOne({ id: id });
-            if (!hero) return null;
-
-            const heroPowers = await powersdb.findOne({
-              hero_names: hero.name,
-            });
-            let powersResult = [];
-
-            if (heroPowers) {
-              powersResult = Object.entries(heroPowers)
-                .filter(
-                  ([power, value]) =>
-                    value === "True" &&
-                    power !== "hero_names" &&
-                    power !== "_id"
-                )
-                .map(([power]) => power);
-            }
-
-            // Combine hero information and powers
-            return {
-              ...hero,
-              powers: powersResult,
-            };
-          })
-        );
-
-        // Filter out any null values (in case some heroes were not found)
-        const filteredHeroesDetails = heroesDetails.filter(
-          (hero) => hero !== null
-        );
-
-        // Respond with the details
-        res.json(filteredHeroesDetails);
-      } catch (err) {
-        res.status(500).json({ message: err.message });
-      }
-    });
-
     app.get("*", (req, res) => {
       return handle(req, res);
     });
@@ -1111,8 +863,8 @@ server
       return handle(req, res);
     });
 
-    app.listen(3000, () => {
-      console.log("Server listening on port 3000");
+    app.listen(process.env.PORT, () => {
+      console.log(`Server listening on port ${process.env.PORT}`);
     });
   })
   .catch((ex) => {

@@ -23,6 +23,23 @@ import { sendPasswordResetEmail } from "firebase/auth";
 import ForgotPass from "./ForgotPass";
 import { useSession } from "next-auth/react";
 import { getSession } from "next-auth/react";
+import { ToastAction } from "./ui/toast";
+import { sendEmailVerification } from "firebase/auth";
+import { auth } from "@/app/firebase";
+
+const resendEmailVerification = async (email) => {
+  try {
+    const response = await fetch("/api/resendVerificationEmail", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email }),
+    });
+  } catch (error) {
+    console.log(error);
+  }
+};
 
 export default function LogIn({ variant }) {
   const { toast } = useToast();
@@ -43,19 +60,33 @@ export default function LogIn({ variant }) {
         toast({
           title: "Uh-oh!",
           description:
-            "It seems like your account is disabled. Please contact the administrator",
+            "It seems like your account is disabled. Please contact the administrator at arhansari651@gmail.com",
         });
       } else if (res.error == "auth/invalid-credential") {
         toast({
           title: "Uh-oh!",
           description: "Your credentials are invalid. Please try again!",
         });
-      } else
+      } else if (res.error == "") {
         toast({
           title: "Uh-oh!",
           description:
             "Your email is not verified. Sign-up again and please verify your email before continuing!",
+          action: (
+            <ToastAction
+              onClick={() => resendEmailVerification(email)}
+              altText="Resend"
+            >
+              Resend
+            </ToastAction>
+          ),
         });
+      } else if (res.error == "auth/invalid-email") {
+        toast({
+          title: "Uh-oh!",
+          description: "The email is invalid",
+        });
+      }
     } else {
       await toast({
         title: "Successfully logged in!",

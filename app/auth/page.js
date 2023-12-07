@@ -35,12 +35,29 @@ export default function Auth() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!username || username.trim() === "") {
+      toast({
+        title: "Uh-oh!",
+        description: "Username field cannot be left empty!",
+      });
+      return; // Stop the function execution if the username is empty
+    }
+
+    if (username.length > 20) {
+      toast({
+        title: "Username Too Long",
+        description: "Username cannot be more than 20 characters long!",
+      });
+      return;
+    }
+
     try {
       const userCred = await createUserWithEmailAndPassword(
         auth,
         email,
         password
       );
+      console.log(userCred.user);
       await sendEmailVerification(userCred.user);
       await updateProfile(userCred.user, { displayName: username });
       toast({
@@ -52,6 +69,24 @@ export default function Auth() {
       console.log(err.code);
       if (err.code === "auth/email-already-in-use") {
         let message = "Email is already in use!";
+        toast({
+          title: "Uh-oh!",
+          description: message,
+        });
+      } else if (err.code === "auth/missing-email") {
+        let message = "Email field is empty!";
+        toast({
+          title: "Uh-oh!",
+          description: message,
+        });
+      } else if (err.code === "auth/invalid-email") {
+        let message = "Email is invalid!";
+        toast({
+          title: "Uh-oh!",
+          description: message,
+        });
+      } else if (err.code === "auth/missing-password") {
+        let message = "Password field is missing!";
         toast({
           title: "Uh-oh!",
           description: message,

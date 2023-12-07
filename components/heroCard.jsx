@@ -29,7 +29,7 @@ export default function HeroCard({
   powers,
 }) {
   function searchDDG() {
-    var searchQuery = encodeURIComponent(name);
+    var searchQuery = encodeURIComponent(name + " " + publisher);
     var url = `https://duckduckgo.com/?q=${searchQuery}`;
     window.open(url, "_blank");
   }

@@ -45,10 +45,20 @@ export default function AddReview({ listname }) {
     const session = await getSession();
     const token = session?.token.accessToken;
 
+    console.log(rating);
     const ratingInt = parseInt(rating, 10);
 
+    // Check if the rating is empty or not a number
+    if (!rating || isNaN(ratingInt)) {
+      toast({
+        title: "Uh-oh!",
+        description: "Please provide a valid rating.",
+      });
+      return; // Stop the function execution if the rating is empty or invalid
+    }
+
     const res = await fetch(`/api/lists/${listname}/review`, {
-      method: "POST",
+      method: "PUT",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,

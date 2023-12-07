@@ -34,6 +34,25 @@ export default function ListInterface() {
 
     console.log("Reached");
 
+    // Check if the list name is empty
+    if (!name || name.trim() === "") {
+      toast({
+        title: "Uh-oh!",
+        description: "List name cannot be left empty!",
+      });
+      return; // Stop the function execution if the list name is empty
+    }
+
+    // Check if the heroes field is empty
+    if (!heroes || heroes.trim() === "") {
+      toast({
+        title: "Uh-oh!",
+        description:
+          "Hero IDs cannot be left empty! You need to add at least 1 hero",
+      });
+      return; // Stop the function execution if the heroes field is empty
+    }
+
     const session = await getSession();
     const token = session?.token.accessToken;
     console.log(token);

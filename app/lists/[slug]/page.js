@@ -26,7 +26,7 @@ async function getList(name) {
   console.log("Reached");
   const listRes = await fetch(`/api/lists/${name}`);
   const list = await listRes.json();
-  console.log(list);
+
   return list;
 }
 
@@ -37,7 +37,6 @@ async function getHeroes(heroIds) {
   const fetchPromise = heroIds.map(async (id) => {
     const heroRes = await fetch(`/api/heroes/${id}`);
     const hero = await heroRes.json();
-    console.log(hero);
 
     return hero;
   });
@@ -71,8 +70,6 @@ export default function Page({ params }) {
       }),
       credentials: "include",
     });
-
-    console.log(res);
 
     if (res.ok) {
       await toast({

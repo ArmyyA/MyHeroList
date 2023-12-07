@@ -77,15 +77,37 @@ export default function EditList({
     const session = await getSession();
     const token = session?.token.accessToken;
     console.log(token);
+
+    const parseAndValidateHeroId = (heroId) => {
+      const id = typeof heroId === "string" ? parseInt(heroId.trim()) : heroId;
+      return !isNaN(id) && id >= 0 && id <= 733;
+    };
+
     const heroesAddArray =
       heroesAdd.trim().length === 0
         ? []
-        : heroesAdd.split(",").map((hero) => parseInt(hero.trim()));
+        : heroesAdd.split(",").map((hero) => {
+            return typeof hero === "string" ? parseInt(hero.trim()) : hero;
+          });
 
     const heroesRemArray =
       heroesRem.trim().length === 0
         ? []
-        : heroesRem.split(",").map((hero) => parseInt(hero.trim()));
+        : heroesRem.split(",").map((hero) => {
+            return typeof hero === "string" ? parseInt(hero.trim()) : hero;
+          });
+
+    // Validate hero IDs
+    const isAddArrayValid = heroesAddArray.every(parseAndValidateHeroId);
+    const isRemArrayValid = heroesRemArray.every(parseAndValidateHeroId);
+
+    if (!isAddArrayValid || !isRemArrayValid) {
+      toast({
+        title: "Invalid Hero IDs",
+        description: "Hero IDs must be integers between 0 and 733.",
+      });
+      return; // Stop the function execution if there are invalid hero IDs
+    }
 
     const res = await fetch(`/api/lists/${listname}/update`, {
       method: "PUT",
