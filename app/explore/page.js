@@ -68,6 +68,7 @@ export default function Explore() {
   const [publisher, setPublisher] = useState();
   const { data: session, status } = useSession();
   const [lists, setLists] = useState([]);
+  const [disabled, setIsDisabled] = useState(false);
 
   const [powers, setPowers] = useState([]);
 
@@ -78,6 +79,7 @@ export default function Explore() {
   }, []);
 
   async function getHeroes() {
+    setIsDisabled(true);
     console.log(power);
     console.log("Reached");
     console.log(name);
@@ -89,12 +91,19 @@ export default function Explore() {
         publisher || ""
       )}&Power=${encodeURIComponent(power || "")}`
     );
-    const heroes = await heroRes.json();
 
-    if (heroes.length == 0) {
-      setHeroes(["No Heroes Found"]);
-    } else {
-      setHeroes(heroes);
+    try {
+      const heroes = await heroRes.json();
+
+      if (heroes.length == 0) {
+        setHeroes(["No Heroes Found"]);
+      } else {
+        setHeroes(heroes);
+      }
+    } catch (error) {
+      console.error("Failed to fetch heroes:", error);
+    } finally {
+      setIsDisabled(false);
     }
   }
   const handleChange = (newValue) => {
@@ -169,7 +178,9 @@ export default function Explore() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button onClick={getHeroes}>Search</Button>
+              <Button onClick={getHeroes} disabled={disabled}>
+                Search
+              </Button>
             </div>
             <div className="mt-16">
               <Separator />

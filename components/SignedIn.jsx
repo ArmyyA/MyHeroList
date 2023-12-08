@@ -4,6 +4,7 @@ import { Button } from "./ui/button";
 import { signOut } from "next-auth/react";
 import Link from "next/link";
 import { useToast } from "@/components/ui/use-toast";
+import { useRouter } from "next/navigation";
 import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
@@ -18,6 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export default function SignedIn({ user }) {
+  const router = useRouter();
   const { toast } = useToast();
   console.log("From signed");
   console.log(user);
@@ -52,11 +54,13 @@ export default function SignedIn({ user }) {
               </DropdownMenuItem>
             </Link>
             <Link
-              onClick={() => {
-                signOut({ callbackUrl: "/" });
-                toast({
+              onClick={async () => {
+                await signOut({ redirect: false });
+                await toast({
                   title: "Successfully logged out!",
                 });
+                router.push("/");
+                router.refresh();
               }}
               href=""
             >
