@@ -11,7 +11,7 @@ const { sendEmailVerification } = require("firebase/auth");
 
 const auth = require("next-auth");
 
-const dev = process.env.NODE_ENV !== "production";
+const dev = process.env.NODE_ENV === "production";
 const server = next({ dev });
 const handle = server.getRequestHandler();
 
